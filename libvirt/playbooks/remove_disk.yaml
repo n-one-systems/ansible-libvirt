@@ -1,0 +1,8 @@
+- name: create disk image
+  hosts: localhost
+  tasks:
+  - name: Delete a libvirt volume
+    nsys.libvirt.libvirt_volume:
+      name: my_new_volume
+      pool: default
+      state: absent
