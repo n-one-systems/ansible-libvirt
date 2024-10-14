@@ -7,7 +7,7 @@ An Ansible collection for managing libvirt resources. This collection provides m
 You can install this collection via ansible-galaxy:
 
 ```bash
-ansible-galaxy collection install nsys.libvirt
+ansible-galaxy collection install https://github.com/n-one-systems/ansible-libvirt.git
 ```
 
 ## Requirements
