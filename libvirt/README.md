@@ -34,7 +34,7 @@ sudo dnf install libvirt-devel python3-libvirt
 
 ### libvirt_volume
 
-This module allows you to create and delete libvirt storage volumes.
+This module allows you to create, delete, and import libvirt storage volumes.
 
 #### Parameters
 
@@ -45,6 +45,8 @@ This module allows you to create and delete libvirt storage volumes.
 - `format`: Format of the storage volume. Choices: raw, qcow2, vmdk. Default: raw.
 - `state`: State of the storage volume. Choices: present, absent. Default: present.
 - `uri`: libvirt connection URI. Default: 'qemu:///system'.
+- `import_image`: Path to an existing image to import.
+- `import_format`: Format of the image being imported. Choices: raw, qcow2, vmdk. Default: qcow2.
 
 #### Example Usage
 
@@ -62,6 +64,30 @@ This module allows you to create and delete libvirt storage volumes.
     name: my_volume
     pool: default
     state: absent
+
+- name: Import an existing qcow2 image
+  nsys.libvirt.libvirt_volume:
+    name: imported_volume
+    pool: default
+    import_image: /path/to/existing/image.qcow2
+    import_format: qcow2
+    state: present
+
+- name: Import an existing raw image
+  nsys.libvirt.libvirt_volume:
+    name: imported_raw_volume
+    pool: default
+    import_image: /path/to/existing/image.raw
+    import_format: raw
+    state: present
+
+- name: Import an existing vmdk image
+  nsys.libvirt.libvirt_volume:
+    name: imported_vmdk_volume
+    pool: default
+    import_image: /path/to/existing/image.vmdk
+    import_format: vmdk
+    state: present
 ```
 
 ## Planned Functionality
@@ -102,4 +128,4 @@ This collection is maintained by N-One Systems. For more information, visit our 
 
 ## Support
 
-For professional support, please contact N-One Systems at support@n-one.systems.
+For professional support, please open an issue @ github
