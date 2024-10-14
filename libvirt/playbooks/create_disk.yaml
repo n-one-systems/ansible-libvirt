@@ -1,3 +1,5 @@
+# Sample disk creation playbook
+
 - name: create disk image
   hosts: localhost
   tasks:
@@ -10,8 +12,3 @@
       format: qcow2
       state: present
   
-  #- name: Delete a libvirt volume
-  #  libvirt_volume:
-  #    name: my_old_volume
-  #    pool: default
-  #    state: absent

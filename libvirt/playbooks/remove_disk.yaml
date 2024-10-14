@@ -1,3 +1,5 @@
+# Sample disk removal playbook
+
 - name: create disk image
   hosts: localhost
   tasks:
