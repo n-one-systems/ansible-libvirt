@@ -34,7 +34,7 @@ sudo dnf install libvirt-devel python3-libvirt
 
 ### libvirt_volume
 
-This module allows you to create, delete, and import libvirt storage volumes.
+This module allows you to create, delete, resize, and import libvirt storage volumes.
 
 #### Parameters
 
@@ -43,10 +43,10 @@ This module allows you to create, delete, and import libvirt storage volumes.
 - `capacity`: Size of the storage volume (e.g., '10G', '1024M').
 - `allocation`: Initial allocation size of the storage volume (e.g., '1G', '512M').
 - `format`: Format of the storage volume. Choices: raw, qcow2, vmdk. Default: raw.
-- `state`: State of the storage volume. Choices: present, absent. Default: present.
+- `state`: State of the storage volume. Choices: present, absent, resize. Default: present.
 - `uri`: libvirt connection URI. Default: 'qemu:///system'.
 - `import_image`: Path to an existing image to import.
-- `import_format`: Format of the image being imported. Choices: raw, qcow2, vmdk. Default: qcow2.
+- `import_format`: Format of the image being imported. Choices: raw, qcow2, vmdk.
 
 #### Example Usage
 
@@ -58,6 +58,13 @@ This module allows you to create, delete, and import libvirt storage volumes.
     capacity: 5G
     format: qcow2
     state: present
+
+- name: Resize a storage volume
+  nsys.libvirt.libvirt_volume:
+    name: my_volume
+    pool: default
+    capacity: 10G
+    state: resize
 
 - name: Delete a storage volume
   nsys.libvirt.libvirt_volume:
@@ -71,22 +78,6 @@ This module allows you to create, delete, and import libvirt storage volumes.
     pool: default
     import_image: /path/to/existing/image.qcow2
     import_format: qcow2
-    state: present
-
-- name: Import an existing raw image
-  nsys.libvirt.libvirt_volume:
-    name: imported_raw_volume
-    pool: default
-    import_image: /path/to/existing/image.raw
-    import_format: raw
-    state: present
-
-- name: Import an existing vmdk image
-  nsys.libvirt.libvirt_volume:
-    name: imported_vmdk_volume
-    pool: default
-    import_image: /path/to/existing/image.vmdk
-    import_format: vmdk
     state: present
 ```
 
@@ -128,4 +119,4 @@ This collection is maintained by N-One Systems. For more information, visit our 
 
 ## Support
 
-For professional support, please open an issue @ github
+For professional support, please open an issue on our [GitHub issue tracker](https://github.com/n-one-systems/ansible-libvirt/issues).
