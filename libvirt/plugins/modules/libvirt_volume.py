@@ -8,7 +8,7 @@ DOCUMENTATION = r'''
 module: libvirt_volume
 short_description: Manage libvirt storage volumes
 description:
-  - Create, delete, or resize libvirt storage volumes.
+  - Create, delete, resize, or import libvirt storage volumes.
 options:
   name:
     description:
@@ -23,7 +23,7 @@ options:
   capacity:
     description:
       - Size of the storage volume (e.g., '10G', '1024M').
-      - Required when creating a volume or resizing an existing one.
+      - Required when creating a volume, resizing an existing one, or importing an image.
     type: str
   allocation:
     description:
@@ -39,18 +39,28 @@ options:
     description:
       - State of the storage volume.
     type: str
-    choices: [ 'present', 'absent', 'resize' ]
+    choices: [ 'present', 'absent', 'resize', 'import' ]
     default: 'present'
   uri:
     description:
       - libvirt connection uri.
     type: str
     default: 'qemu:///system'
+  import_image:
+    description:
+      - Path to an existing image to import.
+    type: str
+  import_format:
+    description:
+      - Format of the image being imported.
+    type: str
+    choices: [ 'raw', 'qcow2', 'vmdk' ]
+    default: 'qcow2'
 requirements:
-  - "python >= 2.6"
+  - "python >= 3.11"
   - "libvirt-python"
 author:
-  - "Your Name (@yourgithubusername)"
+  - "N-One Systems an AI (@n-one-systems)"
 '''
 
 EXAMPLES = r'''
@@ -74,12 +84,21 @@ EXAMPLES = r'''
     name: my_volume
     pool: default
     state: absent
+
+- name: Import an existing qcow2 image
+  libvirt_volume:
+    name: imported_volume
+    pool: default
+    import_image: /path/to/existing/image.qcow2
+    import_format: qcow2
+    state: import
 '''
 
 RETURN = r'''
 '''
 
 import traceback
+import os
 
 try:
     import libvirt
@@ -173,6 +192,45 @@ def resize_volume(module, conn, pool_name, vol_name, new_capacity):
     except libvirt.libvirtError as e:
         module.fail_json(msg=f"Error accessing volume: {str(e)}")
 
+def import_volume(module, conn, pool_name, vol_name, import_path, import_format):
+    try:
+        pool = conn.storagePoolLookupByName(pool_name)
+        if not pool:
+            module.fail_json(msg=f"Storage pool '{pool_name}' not found.")
+
+        # Check if volume already exists
+        try:
+            vol = pool.storageVolLookupByName(vol_name)
+            return False, "Volume already exists"
+        except libvirt.libvirtError:
+            pass  # Volume doesn't exist, we can import it
+
+        # Get the size of the existing image
+        image_size = os.path.getsize(import_path)
+
+        # Create a new volume with the same size as the existing image
+        xml = get_volume_xml(vol_name, str(image_size), str(image_size), import_format)
+        vol = pool.createXML(xml, 0)
+        if vol is None:
+            module.fail_json(msg="Failed to create the storage volume for import.")
+
+        # Upload the content of the existing image to the new volume
+        stream = conn.newStream(0)
+        vol.upload(stream, 0, image_size, 0)
+        
+        with open(import_path, 'rb') as f:
+            data = f.read(1024*1024)  # Read 1MB at a time
+            while data:
+                stream.send(data)
+                data = f.read(1024*1024)
+        
+        stream.finish()
+        return True, f"Volume imported successfully (format: {import_format})"
+    except libvirt.libvirtError as e:
+        module.fail_json(msg=f"Error importing volume: {str(e)}")
+    except IOError as e:
+        module.fail_json(msg=f"Error reading import file: {str(e)}")
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
@@ -181,8 +239,10 @@ def main():
             capacity=dict(type='str'),
             allocation=dict(type='str'),
             format=dict(type='str', choices=['raw', 'qcow2', 'vmdk'], default='raw'),
-            state=dict(type='str', choices=['present', 'absent', 'resize'], default='present'),
-            uri=dict(type='str', default='qemu:///system')
+            state=dict(type='str', choices=['present', 'absent', 'resize', 'import'], default='present'),
+            uri=dict(type='str', default='qemu:///system'),
+            import_image=dict(type='str'),
+            import_format=dict(type='str', choices=['raw', 'qcow2', 'vmdk'], default='qcow2')
         ),
         supports_check_mode=True,
     )
@@ -197,6 +257,8 @@ def main():
     format = module.params['format']
     state = module.params['state']
     uri = module.params['uri']
+    import_image = module.params['import_image']
+    import_format = module.params['import_format']
 
     try:
         conn = libvirt.open(uri)
@@ -206,17 +268,24 @@ def main():
     try:
         changed = False
         if state == 'present':
-            if not capacity:
-                module.fail_json(msg="'capacity' is required when state is 'present'")
-            if not allocation:
-                allocation = '0'  # Default to thin provisioning
-            changed, message = create_volume(module, conn, pool, name, capacity, allocation, format)
+            if import_image:
+                changed, message = import_volume(module, conn, pool, name, import_image, import_format)
+            else:
+                if not capacity:
+                    module.fail_json(msg="'capacity' is required when state is 'present' and not importing an image")
+                if not allocation:
+                    allocation = '0'  # Default to thin provisioning
+                changed, message = create_volume(module, conn, pool, name, capacity, allocation, format)
         elif state == 'absent':
             changed, message = delete_volume(module, conn, pool, name)
         elif state == 'resize':
             if not capacity:
                 module.fail_json(msg="'capacity' is required when state is 'resize'")
             changed, message = resize_volume(module, conn, pool, name, capacity)
+        elif state == 'import':
+            if not import_image:
+                module.fail_json(msg="'import_image' is required when state is 'import'")
+            changed, message = import_volume(module, conn, pool, name, import_image, import_format)
 
         module.exit_json(changed=changed, msg=message)
     except Exception as e:
