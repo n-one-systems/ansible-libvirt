@@ -1,0 +1,58 @@
+# ./roles/cloud_init_config/tasks/process_vm.yml
+# nsys-ai-claude-3.5
+
+- name: Create VM-specific cloud-init directory
+  ansible.builtin.file:
+    path: "{{ cloud_init_output_dir }}/{{ vm.name }}"
+    state: directory
+    mode: '0755'
+
+- name: Generate user-data configuration
+  ansible.builtin.template:
+    src: "{{ user_data_template }}"
+    dest: "{{ cloud_init_output_dir }}/{{ vm.name }}/user-data"
+    mode: '0644'
+
+- name: Generate network configuration
+  ansible.builtin.template:
+    src: "{{ network_data_template }}"
+    dest: "{{ cloud_init_output_dir }}/{{ vm.name }}/network-config"
+    mode: '0644'
+  vars:
+    interfaces: "{{ INTERFACE_REFERENCE | selectattr('target_domain', 'equalto', vm.name) | list }}"
+
+- name: Generate meta-data configuration
+  ansible.builtin.template:
+    src: "{{ meta_data_template }}"
+    dest: "{{ cloud_init_output_dir }}/{{ vm.name }}/meta-data"
+    mode: '0644'
+
+- name: Generate cloud-init ISO
+  ansible.builtin.command:
+    cmd: >-
+      cloud-localds
+      {% if configure_network | bool %}--network-config network-config{% endif %}
+      {{ POOL_DIR}}/{{PROJECT_NAME}}-{{vm.name}}-cloud-init.iso
+      user-data
+      meta-data
+    chdir: "{{ cloud_init_output_dir }}/{{ vm.name }}"
+    creates: "{{ POOL_DIR}}/{{PROJECT_NAME}}-{{vm.name}}-cloud-init.iso"
+
+- name: Set local disk reference entry
+  set_fact:
+      __disk_reference:
+        reference: "{{ PROJECT_NAME}}-{{vm.name}}-cloud-init.iso"
+        target_domain: "{{ vm.name }}"
+
+- name: Update Disk reference list to include cloud-init ISO
+  set_fact:
+    DISK_REFERENCE: "{{ DISK_REFERENCE | default([]) + [__disk_reference] }}"
+  when: DISK_REFERENCE | selectattr('reference', 'equalto', __disk_reference.reference) 
+                 | selectattr('target_domain', 'equalto', __disk_reference.target_domain)
+                 | list | length == 0
+- name: Debug - Cloud init iso file
+  ansible.builtin.debug:
+    msg: "{{ POOL_DIR}}/{{PROJECT_NAME}}-{{vm.name}}-cloud-init.iso"
+  when: ansible_verbosity >= 3
+
+

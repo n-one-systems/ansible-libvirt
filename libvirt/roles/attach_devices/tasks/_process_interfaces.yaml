@@ -1,0 +1,11 @@
+# ./roles/attach_devices/tasks/_process_interfaces.yaml
+# nsys-ai-claude-3.5
+
+- name: Process network interface attachments
+  nsys.libvirt.attach_network:
+    network_name: "{{ interface_ref.reference }}"
+    domain_name: "{{ interface_ref.target_domain }}"
+    connected: "{{ interface_ref.connected | default(true) }}"
+  loop: "{{ interfaces_to_process }}"
+  loop_control:
+    loop_var: interface_ref

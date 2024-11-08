@@ -1,0 +1,60 @@
+# ./roles/molecule_transformer/tasks/_domain_references.yaml
+
+# creates the references for interfaces and disks
+- name: Initialize interface and disk references for this VM
+  ansible.builtin.set_fact:
+    _interface_reference: []
+    _disk_reference: []
+
+- name: Creates Interface Reference
+  ansible.builtin.set_fact:
+    _interface_reference: "{{ _interface_reference | default([]) + [loop_if] }}"
+  vars:
+    loop_if:
+      reference: "{{ PROJECT_NAME ~ '-' ~ interface.network if interface.network != 'default' else 'default' }}"
+      ip: "{{interface.ip | default(omit)}}"
+      target_domain: "{{vm.name}}"
+      connected: "{{interface.connected | default(true)}}"
+  loop: "{{ vm.interfaces }}"
+  loop_control:
+    loop_var: interface
+  when: vm.interfaces is defined
+
+- name: Creates Disk Reference
+  ansible.builtin.set_fact:
+    _disk_reference: "{{ _disk_reference | default([]) + [loop_disk] }}"
+  vars:
+    loop_disk:
+      reference: "{{ PROJECT_NAME ~ '-' ~ vm.name ~ '-' ~ disk.name }}"
+      target_domain: "{{ vm.name }}"
+      boot_order: "{{ disk.boot_order | default(omit) }}"
+  loop: "{{ vm.disks }}"
+  loop_control:
+    loop_var: disk
+  when: vm.disks is defined
+
+- name: Process Domain basics for each VM
+  ansible.builtin.set_fact:
+    _vms_as_dict: "{{ _vms_as_dict | default([])+ [_transformed_vm] }}"
+  vars:
+    _transformed_vm:
+      name: "{{ vm.name }}"
+      type: "{{ vm.type }}"
+      cpu: "{{ vm.cpu }}"
+      memory: "{{ vm.memory }}"
+      power_state: "{{ vm.power_state | default('running') }}"
+      cloud_init: "{{ vm.cloud_init | default(true) }}"
+
+- name: DEBUG - Domain as dict
+  ansible.builtin.debug:
+    msg:
+    - "{{ _vms_as_dict }}"
+    - "{{ _disk_reference }}"
+    - "{{ _interface_reference }}"
+  when: ansible_verbosity >= 3
+
+- name: Append local vars to export lists
+  ansible.builtin.set_fact:
+    DOMAIN_SPECS: "{{ DOMAIN_SPECS | default([]) + _vms_as_dict }}"
+    INTERFACE_REFERENCE: "{{ INTERFACE_REFERENCE | default([]) + _interface_reference }}"
+    DISK_REFERENCE: "{{ DISK_REFERENCE | default([]) + _disk_reference }}"

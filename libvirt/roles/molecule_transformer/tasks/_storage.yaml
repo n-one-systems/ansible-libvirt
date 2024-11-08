@@ -1,0 +1,74 @@
+# ./roles/molecule_transformer/tasks/_storage.yaml
+#
+# Takes a molecule provided yaml structure and returns a list of disks to work on
+# RETURNS:
+#   DISKS
+#   POOL_NAME
+#   POOL_DIR
+
+- name: initialize storage list
+  ansible.builtin.set_fact:
+    DISKS: []
+
+
+- name: Initialize storage list
+  set_fact:
+    storage_list: []
+- name: debug
+  ansible.builtin.debug:
+    msg:
+    - "{{ yaml_content | selectattr('type', 'equalto', 'disk') | list }}"
+
+- name: Process disk type entries
+  # format = format if item.format is defined, if not, used extension of path, if path is defined and not iso, if path is defined and iso, use raw, if not defined use qcow2
+  ansible.builtin.set_fact:
+    storage_list: "{{ storage_list | default([]) + [transformed_item] }}"
+  vars:
+    transformed_item:
+      name: "{{ PROJECT_NAME }}-{{ item.name }}"
+      format: >-
+        {{
+          item.format if item.format is defined else
+          (
+            (item.path.split('.')[-1] if item.path is defined and '.' in item.path and item.path.split('.')[-1] != 'iso' else 'raw')
+            if item.path is defined else 'qcow2'
+          )
+        }}
+      capacity: "{{ item.capacity | default(omit) }}"
+      path: "{{ item.path | default(omit) }}"
+      boot_order: "{{ item.boot_order | default(omit) }}"
+  loop: "{{ yaml_content | selectattr('type', 'equalto', 'disk') | list }}"
+
+- name: Process VM disks
+  ansible.builtin.set_fact:
+    storage_list: "{{ storage_list | default([]) + [transformed_item] }}"
+  vars:
+    transformed_item:
+      name: "{{ PROJECT_NAME }}-{{ item.0.name }}-{{ item.1.name }}"
+      format: >-
+        {{ 
+          item.1.format if item.1.format is defined else
+          (item.1.path.split('.')[-1] if item.1.path is defined and '.' in item.1.path and item.1.path.split('.')[-1] != 'iso' else 'raw')
+          if item.1.path is defined else 'qcow2'
+        }}
+      capacity: "{{ item.1.capacity | default(omit) }}"
+      path: "{{ item.1.path | default(omit) }}"
+      boot_order: "{{ item.1.boot_order | default(omit) }}"
+  loop: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | subelements('disks') }}"
+
+
+- name: Export storage list
+  ansible.builtin.set_fact:
+    POOL_NAME: "{{ PROJECT_NAME }}-pool"
+    DISKS: "{{ storage_list}}"
+- name: Set pool directory
+  ansible.builtin.set_fact:
+    POOL_DIR: "{{project_base_dir}}/{{ POOL_NAME }}"
+
+- name: DEBU -  Storage/Disk Data
+  ansible.builtin.debug:
+      msg:
+        - "{{ POOL_NAME }}"
+        - "{{ POOL_DIR }}"
+        - "{{ DISKS }}"
+  when: ansible_verbosity >= 1

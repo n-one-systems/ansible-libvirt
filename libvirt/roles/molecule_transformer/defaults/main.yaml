@@ -1,0 +1,3 @@
+# ./roles/libvirt_storage_pool/defaults/main.yml
+
+default_libvirt_base_path: /var/lib/libvirt/

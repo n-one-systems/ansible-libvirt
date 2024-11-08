@@ -1,0 +1,54 @@
+---
+# network_lifecycle.yaml
+
+- name: Demonstrate network lifecycle management
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Create initial network
+    block:
+    - name: Create NAT network
+      ansible.builtin.include_role:
+        name: nsys.libvirt.network
+      vars:
+        libvirt_network_name: "demo_network"
+        libvirt_network_mode: "nat"
+        libvirt_network_state: present
+
+    - name: Wait for network to be ready
+      ansible.builtin.pause:
+        seconds: 5
+
+  - name: Verify network creation
+    block:
+    - name: Get network status
+      community.libvirt.virt_net:
+        name: "demo_network"
+        command: status
+      register: net_status
+
+    - name: Display network status
+      ansible.builtin.debug:
+        var: net_status
+
+  - name: Remove network
+    block:
+    - name: Delete NAT network
+      ansible.builtin.include_role:
+        name: nsys.libvirt.network
+      vars:
+        libvirt_network_name: "demo_network"
+        libvirt_network_state: absent
+
+  - name: Verify network removal
+    block:
+    - name: Check if network exists
+      community.libvirt.virt_net:
+        name: "demo_network"
+        command: status
+      register: net_status_final
+      failed_when: false
+
+    - name: Display final network status
+      ansible.builtin.debug:
+        msg: "Network status: {{ net_status_final}}"

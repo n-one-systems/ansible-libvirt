@@ -1,0 +1,22 @@
+# ./roles/libvirt_networks/tasks/_create.yaml
+---
+- name: Define libvirt network
+  community.libvirt.virt_net:
+    name: "{{ network.name }}"
+    uri: "{{ uri }}"
+    state: present
+    xml: '{{ lookup("template", "network-template.xml.j2") }}'
+  loop: "{{ networks }}"
+  loop_control:
+    loop_var: network
+    index_var: network_index
+
+- name: Start all libvirt networks
+  community.libvirt.virt_net:
+    name: "{{ network.name }}"
+    uri: "{{ uri }}"
+    state: active
+    autostart: true
+  loop: "{{ networks }}"
+  loop_control:
+    loop_var: network

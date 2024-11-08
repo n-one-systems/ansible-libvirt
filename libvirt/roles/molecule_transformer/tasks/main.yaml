@@ -1,0 +1,102 @@
+- name: debug
+  ansible.builtin.debug:
+    msg:
+    - "{{yaml_content}}"
+    - "{{project_name}}"
+- name: Base Assert Molecule variable integrity
+  # we do not allow duplicated names
+  block:
+  - name: Assert that the required variables are defined
+    assert:
+      that:
+        - yaml_content is defined
+        - project_name is defined
+        - state is defined
+        - state in ['present', 'absent']
+        - project_base_dir is defined
+      quiet: true
+  - name: Extract Domain names
+    set_fact:
+      __vm_names: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | map(attribute='name') | list }}"
+
+  - name: Extract Network names
+    set_fact:
+      __network_names: "{{ yaml_content | selectattr('type', 'equalto', 'network') | map(attribute='name') | list }}"
+
+  - name: Extract Disk names
+    set_fact:
+      __disk_names: "{{ yaml_content | selectattr('type', 'equalto', 'disk') | map(attribute='name') | list }}"
+
+  - name: Assert if names are unique
+    ansible.builtin.assert:
+      that:
+      -  __vm_names | length == __vm_names | unique | length
+      - __network_names | length == __network_names | unique | length
+      - __disk_names | length == __disk_names | unique | length
+      fail_msg: "nNames have to be unique in same type"
+      quiet: true
+- name: Assert block for cloud-init packages
+  when: (yaml_content | selectattr('type', 'equalto', 'vm') | selectattr('cloud_init', 'defined') | selectattr('cloud_init') | list | length) > 0
+  # we run this check only if we create vms that use cloud-init
+  block:
+    - name: Check if genisoimage is installed
+      ansible.builtin.shell: command -v genisoimage
+      register: genisoimage_check
+      failed_when: genisoimage_check.rc != 0
+
+    - name: Check if cloud_localds is installed
+      ansible.builtin.shell: command -v cloud-localds
+      register: cloud_localds_check
+      failed_when: cloud_localds_check.rc != 0
+
+    - name: Assert that both required packages are installed
+      ansible.builtin.assert:
+        that:
+          - genisoimage_check.rc == 0
+          - cloud_localds_check.rc == 0
+        fail_msg: "Required packages (genisoimage and cloud-localds) are not installed"
+        success_msg: "All required packages are installed"
+
+- name: Set the project meta vars
+  ansible.builtin.set_fact:
+    PROJECT_NAME: "{{ project_name }}"
+    PROJECT_BASE_DIR: "{{ project_base_dir }}"
+
+- name: Include storage transformation
+  ansible.builtin.include_tasks: _storage.yaml
+
+- name: Include network transformation
+  ansible.builtin.include_tasks: _network.yaml
+
+- name: Include domain transformation
+  ansible.builtin.include_tasks: _domain.yaml
+
+- name: DEBUG - block output
+  when: ansible_verbosity >= 1
+  block:
+  - name: Debug - out project meta vars
+    ansible.builtin.debug:
+      msg:
+      - "Project Name: {{ PROJECT_NAME }}"
+      - "Project base dir: {{ PROJECT_BASE_DIR }}"
+  - name: Debug - out domain specs
+    ansible.builtin.debug:
+      msg: "{{ DOMAIN_SPECS }}"
+  - name: Debug - out network specs
+    ansible.builtin.debug:
+      msg: "{{ NETWORKS }}"
+  - name: Debug - out interface references
+    ansible.builtin.debug:
+      msg: "{{ INTERFACE_REFERENCE }}"
+  - name: Debug - out pool name
+    ansible.builtin.debug:
+      msg: "{{ POOL_NAME }}"
+  - name: Debug - out pool dir
+    ansible.builtin.debug:
+      msg: "{{ POOL_DIR }}"
+  - name: Debug - out Disk specs
+    ansible.builtin.debug:
+      msg: "{{ DISKS }}"
+  - name: Debug - out disk references
+    ansible.builtin.debug:
+      msg: "{{ DISK_REFERENCE }}"

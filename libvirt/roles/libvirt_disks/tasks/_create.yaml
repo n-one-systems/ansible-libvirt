@@ -1,0 +1,7 @@
+# ./roles/libvirt_disks/tasks/_create.yml
+---
+- name: "Determine disk create or import action for {{ disk.name }}"
+  ansible.builtin.set_fact:
+      present_disk_action: "{{ '_import_disk.yaml' if disk.path is defined else '_create_disk.yaml' }}"
+- name: Include action based on disk type
+  ansible.builtin.include_tasks: "{{ present_disk_action }}"

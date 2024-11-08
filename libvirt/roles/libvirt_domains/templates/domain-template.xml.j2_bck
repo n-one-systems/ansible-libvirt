@@ -1,0 +1,48 @@
+{% set project_disks = lookup('nsys.libvirt.volumes', pool_name ~'/'~project_name~'*') | selectattr('name') | items2dict(key_name='name', value_name='format') %}
+
+
+<domain type='kvm'>
+    <name>{{ item.name }}</name>
+    <memory unit='MiB'>{{ item.memory | default(default_domain.memory) }}</memory>
+    <vcpu>{{ item.cpu | default(default_domain.cpu) }}</vcpu>
+    <os firmware="efi">
+        <type arch="x86_64" machine="pc-q35-9.1">hvm</type>
+        <firmware>
+            <feature enabled="no" name="enrolled-keys"/>
+            <feature enabled="yes" name="secure-boot"/>
+        </firmware>
+        <loader readonly="yes" secure="yes" type="pflash">/usr/share/edk2/x64/OVMF_CODE.secboot.4m.fd</loader>
+
+    </os>
+    <features>
+        <acpi/>
+        <apic/>
+    </features>
+    <cpu mode='host-model'/>
+    <devices>
+    {% for disk in item.disks %}
+        {% set disk_info_dict = project_disks[disk.reference] %}
+            <disk type='volume' device='{{ "cdrom" if disk_info_dict == "iso" else "disk" }}'>
+                <driver name='qemu' type='{{ "raw" if disk_info_dict == "iso" else disk_info_dict }}'/>
+                <source pool='{{ pool_name }}' volume='{{ disk.reference }}'/>
+                <target dev='{{ domain_defaults.disk_prefix }}{{ loop.index0 | nsys.libvirt.drive_letter_from_index }}' bus='{{ "sata" if disk_info_dict == "iso" else domain_defaults.disk_bus }}'/>
+                <boot order='{{ loop.index if disk_info_dict != "iso" else item.disks | length }}'/>
+            </disk>
+    {% endfor %}
+        {% for interface in item.interfaces %}
+            <interface type='network'>
+                <source network='{{ interface.reference }}'/>
+                <model type='virtio'/>
+            </interface>
+        {% endfor %}
+        <graphics type="spice" autoport="yes">
+            <listen type="address"/>
+            <image compression="off"/>
+            <gl enable="no"/>
+        </graphics>
+        <video>
+            <model type="cirrus" vram="16384" heads="1" primary="yes"/>
+            <address type="pci" domain="0x0000" bus="0x07" slot="0x01" function="0x0"/>
+        </video>
+    </devices>
+</domain>

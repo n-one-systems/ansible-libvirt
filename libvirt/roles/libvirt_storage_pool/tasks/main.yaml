@@ -1,0 +1,30 @@
+- name: Assert that state is defined
+  ansible.builtin.assert:
+    that:
+      - state is defined
+      - state in ['present', 'absent']
+      - POOL_NAME is defined
+    fail_msg: "state must be defined and either 'present' or 'absent'"
+    quiet: true
+
+- name: DEBUG - Pool to modify
+  ansible.builtin.debug:
+    msg: "{{ POOL_NAME }}"
+  when: ansible_verbosity >= 1
+
+- name: Set facts for state of pool
+  ansible.builtin.set_fact:
+    pool_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml' }}"
+    do_not_delete: "{{ true if POOL_NAME == 'default' and state == 'absent' else false }}"
+
+- name: Info if pool is default and state is absent
+  ansible.builtin.debug:
+    msg: "Will not remove default pool"
+  when: do_not_delete is true
+
+- name: Include pool action tasks
+  ansible.builtin.include_tasks: "{{ pool_action }}"
+  when: do_not_delete is not defined or do_not_delete is false
+  vars:
+      pool_name: "{{ POOL_NAME }}"
+      pool_dir: "{{ POOL_DIR }}"

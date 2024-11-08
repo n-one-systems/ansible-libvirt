@@ -1,25 +1,18 @@
 namespace: nsys
 name: libvirt
-version: 0.1.4
+version: 1.0.0
 readme: README.md
 authors:
-  - N-One Systems <info@n-one.systems>
-description: A collection for managing libvirt resources
+  - N-One Systems (@n-one-systems)
+description: Collection for managing libvirt resources
 license:
   - GPL-3.0-or-later
 tags:
   - libvirt
   - virtualization
-repository: https://github.com/n-one-systems/ansible-libvirt
-documentation: https://github.com/n-one-systems/ansible-libvirt/blob/main/README.md
-homepage: https://github.com/n-one-systems/ansible-libvirt
-issues: https://github.com/n-one-systems/ansible-libvirt/issues
-build_ignore:
-  - '*.tar.gz'
-  - '*.pyc'
-  - '*.pyo'
-  - '__pycache__'
-  - '*.git*'
-dependencies: {}
-license_file: 'LICENSE'
-python: '>=3.11'
+  - system
+repository: https://github.com/n-one-systems/ansible-collection-libvirt
+documentation: https://github.com/n-one-systems/ansible-collection-libvirt/tree/main/docs
+homepage: https://github.com/n-one-systems/ansible-collection-libvirt
+issues: https://github.com/n-one-systems/ansible-collection-libvirt/issues
+build_ignore: []
