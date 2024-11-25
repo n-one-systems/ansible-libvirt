@@ -3,8 +3,3 @@
 
 # URI of the hypervisor
 uri: qemu:///system
-
-# Default device settings
-device_defaults:
-  disk_bus: virtio
-  network_model: virtio

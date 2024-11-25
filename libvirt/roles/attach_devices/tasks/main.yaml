@@ -18,6 +18,6 @@
   when: disks_to_process | length > 0
   ansible.builtin.include_tasks: _process_disks.yaml
 
-#- name: Process interfaces
-#  when: interfaces_to_process | length > 0
-#  ansible.builtin.include_tasks: _process_interfaces.yaml
+- name: Process interfaces
+  when: interfaces_to_process | length > 0
+  ansible.builtin.include_tasks: _process_interfaces.yaml

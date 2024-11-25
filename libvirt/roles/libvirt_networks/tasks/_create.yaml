@@ -16,6 +16,14 @@
     name: "{{ network.name }}"
     uri: "{{ uri }}"
     state: active
+  loop: "{{ networks }}"
+  loop_control:
+    loop_var: network
+
+- name: Ensure all libvirt networks are up on boot
+  community.libvirt.virt_net:
+    name: "{{ network.name }}"
+    uri: "{{ uri }}"
     autostart: true
   loop: "{{ networks }}"
   loop_control:

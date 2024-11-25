@@ -20,6 +20,18 @@
     loop_var: interface
   when: vm.interfaces is defined
 
+- name: Add oob interface to interface reference
+  ansible.builtin.set_fact:
+    _interface_reference: "{{ _interface_reference | default([]) + [loop_if] }}"
+  vars:
+    loop_if:
+      reference: "{{ default_molecule_oob_network_name }}"
+      ip: "{{ default_molecule_oob_network_address | ansible.utils.ipaddr( 254 | random(seed=vm.name)) | ansible.utils.ipaddr('address') }}"
+      target_domain: "{{ vm.name }}"
+      connected: "{{true}}"
+
+
+
 - name: Creates Disk Reference
   ansible.builtin.set_fact:
     _disk_reference: "{{ _disk_reference | default([]) + [loop_disk] }}"

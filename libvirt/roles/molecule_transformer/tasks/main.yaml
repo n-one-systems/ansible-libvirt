@@ -1,8 +1,3 @@
-- name: debug
-  ansible.builtin.debug:
-    msg:
-    - "{{yaml_content}}"
-    - "{{project_name}}"
 - name: Base Assert Molecule variable integrity
   # we do not allow duplicated names
   block:

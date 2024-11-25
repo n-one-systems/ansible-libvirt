@@ -17,9 +17,16 @@
       cidr: "{{ item.cidr if item.name != 'default' else omit }}" # if name is default, omit cidr as it is not needed
       dhcp: "{{ item.dhcp | default(omit) }}"
   loop: "{{ network_entries }}"
+
+- name: Define oob network
+  ansible.builtin.set_fact:
+    _oob_network:
+      name: "{{default_molecule_oob_network_name }}"
+      cidr: "{{default_molecule_oob_network_address }}"
+
 - name: Assign network information
   ansible.builtin.set_fact:
-    NETWORKS: "{{ _networks }}"
+    NETWORKS: "{{ _networks + [_oob_network] }}"
 
 - name: DEBUG - Rendered dict for all Networks as list
   ansible.builtin.debug:
