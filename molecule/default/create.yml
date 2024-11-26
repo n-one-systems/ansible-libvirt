@@ -6,6 +6,6 @@
   connection: local
   gather_facts: false
   roles:
-    - role: nsys.libvirt.molecule_handler
-      vars:
-        molecule_action: create
+  - role: nsys.libvirt.molecule_handler
+    vars:
+      molecule_action: create

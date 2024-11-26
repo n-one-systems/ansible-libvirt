@@ -3,32 +3,32 @@
 # Takes a molecule provided yaml structure and returns a list of VMs with their interfaces and disks as references
 # RETURNS:
 #   DOMAIN_SPECS        - spec of Domains to create/modify
-#   INTERFACE_REFERENCE - list of interfaces associated with their Domains
-#   DISK_REFERENCE      - list of Disks associated with their Domain
 
-- name: Transform VM configurations
+- name: Extract Domain entries
   set_fact:
-    _transformed_vms: >-
-      {{
-        yaml_content | 
-        selectattr('type', 'equalto', 'vm') |
-        list
-      }}
+    _transformed_domains: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | list }}"
 
-- name: Include reference building for interfaces and disks
-  include_tasks: _domain_references.yaml
-  loop: "{{ _transformed_vms }}"
+- name: Transform Domain information
+  ansible.builtin.set_fact:
+    _domain_as_dict: "{{ _domain_as_dict | default([])+ [_transformed_domain] }}"
+  vars:
+    _transformed_domain:
+      name: "{{ _domain.name }}"
+      type: "{{ _domain.type }}"
+      cpu: "{{ _domain.cpu }}"
+      memory: "{{ _domain.memory }}"
+      power_state: "{{ _domain.power_state | default('running') }}"
+      cloud_init: "{{ _domain.cloud_init | default(true) }}"
+  loop: "{{ _transformed_domains }}"
   loop_control:
-      loop_var: vm
+    loop_var: _domain
 
-- name: Set export variable
+- name: Assign domain information
   set_fact:
-    DOMAIN_SPECS: "{{ _vms_as_dict }}"
+    DOMAIN_SPECS: "{{ _domain_as_dict | default([]) }}"
 
-- name: DEBUG - Rendered dict for Domains, Interfaces and Disks
+- name: DEBUG - Rendered dict for Domains
   ansible.builtin.debug:
     msg:
     - "{{ DOMAIN_SPECS }}"
-    - "{{ INTERFACE_REFERENCE }}"
-    - "{{ DISK_REFERENCE }}"
   when: ansible_verbosity >= 1

@@ -1,7 +1,11 @@
-# ./roles/molecule_transformer/tasks/_domain_references.yaml
+# ./roles/molecule_transformer/tasks/_references.yaml
 
-# creates the references for interfaces and disks
-- name: Initialize interface and disk references for this VM
+# Takes a molecule provided yaml structure and returns a list references to disks and interfaces that should be attached to the domains
+# RETURNS:
+#   INTERFACE_REFERENCE - list of interfaces to attach to the domains
+#   DISK_REFERENCE - list of disks to attach to the domains
+
+- name: Initialize interface and disk references for this domain
   ansible.builtin.set_fact:
     _interface_reference: []
     _disk_reference: []
@@ -13,12 +17,12 @@
     loop_if:
       reference: "{{ PROJECT_NAME ~ '-' ~ interface.network if interface.network != 'default' else 'default' }}"
       ip: "{{interface.ip | default(omit)}}"
-      target_domain: "{{vm.name}}"
+      target_domain: "{{domain.name}}"
       connected: "{{interface.connected | default(true)}}"
-  loop: "{{ vm.interfaces }}"
+  loop: "{{ domain.interfaces }}"
   loop_control:
     loop_var: interface
-  when: vm.interfaces is defined
+  when: domain.interfaces is defined
 
 - name: Add oob interface to interface reference
   ansible.builtin.set_fact:
@@ -26,47 +30,34 @@
   vars:
     loop_if:
       reference: "{{ default_molecule_oob_network_name }}"
-      ip: "{{ default_molecule_oob_network_address | ansible.utils.ipaddr( 254 | random(seed=vm.name)) | ansible.utils.ipaddr('address') }}"
-      target_domain: "{{ vm.name }}"
+      ip: >-
+        {{ default_molecule_oob_network_address | 
+        ansible.utils.ipaddr( 254 | random(seed=PROJECT_NAME+domain.name)) | 
+        ansible.utils.ipaddr('host') }}
+      target_domain: "{{ domain.name }}"
       connected: "{{true}}"
-
-
 
 - name: Creates Disk Reference
   ansible.builtin.set_fact:
     _disk_reference: "{{ _disk_reference | default([]) + [loop_disk] }}"
   vars:
     loop_disk:
-      reference: "{{ PROJECT_NAME ~ '-' ~ vm.name ~ '-' ~ disk.name }}"
-      target_domain: "{{ vm.name }}"
+      reference: "{{ PROJECT_NAME ~ '-' ~ domain.name ~ '-' ~ disk.name }}"
+      target_domain: "{{ domain.name }}"
       boot_order: "{{ disk.boot_order | default(omit) }}"
-  loop: "{{ vm.disks }}"
+  loop: "{{ domain.disks }}"
   loop_control:
     loop_var: disk
-  when: vm.disks is defined
+  when: domain.disks is defined
 
-- name: Process Domain basics for each VM
-  ansible.builtin.set_fact:
-    _vms_as_dict: "{{ _vms_as_dict | default([])+ [_transformed_vm] }}"
-  vars:
-    _transformed_vm:
-      name: "{{ vm.name }}"
-      type: "{{ vm.type }}"
-      cpu: "{{ vm.cpu }}"
-      memory: "{{ vm.memory }}"
-      power_state: "{{ vm.power_state | default('running') }}"
-      cloud_init: "{{ vm.cloud_init | default(true) }}"
-
-- name: DEBUG - Domain as dict
+- name: DEBUG - Rendered to attach interfaces and disks
   ansible.builtin.debug:
     msg:
-    - "{{ _vms_as_dict }}"
     - "{{ _disk_reference }}"
     - "{{ _interface_reference }}"
   when: ansible_verbosity >= 3
 
 - name: Append local vars to export lists
   ansible.builtin.set_fact:
-    DOMAIN_SPECS: "{{ DOMAIN_SPECS | default([]) + _vms_as_dict }}"
     INTERFACE_REFERENCE: "{{ INTERFACE_REFERENCE | default([]) + _interface_reference }}"
     DISK_REFERENCE: "{{ DISK_REFERENCE | default([]) + _disk_reference }}"

@@ -52,10 +52,18 @@
         fail_msg: "Required packages (genisoimage and cloud-localds) are not installed"
         success_msg: "All required packages are installed"
 
-- name: Set the project meta vars
+- name: Set and initialize the project meta vars
   ansible.builtin.set_fact:
     PROJECT_NAME: "{{ project_name }}"
     PROJECT_BASE_DIR: "{{ project_base_dir }}"
+    POOL_NAME: ""
+    POOL_DIR: ""
+    DISKS: []
+    DISK_REFERENCE: []
+    NETWORKS: []
+    INTERFACE_REFERENCE: []
+    DOMAIN_SPECS: []
+    CLONES: []
 
 - name: Include storage transformation
   ansible.builtin.include_tasks: _storage.yaml
@@ -65,6 +73,17 @@
 
 - name: Include domain transformation
   ansible.builtin.include_tasks: _domain.yaml
+
+- name: Include Cloning transformation
+  ansible.builtin.include_tasks: _clone.yaml
+
+- name: Include Reference transformation
+  # we do not create references for clones - this is up to the user to manage
+  ansible.builtin.include_tasks: _references.yaml
+  loop: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | list }}"
+  loop_control:
+      loop_var: domain
+
 
 - name: DEBUG - block output
   when: ansible_verbosity >= 1
@@ -77,6 +96,9 @@
   - name: Debug - out domain specs
     ansible.builtin.debug:
       msg: "{{ DOMAIN_SPECS }}"
+  - name: Debug - out clone specs
+    ansible.builtin.debug:
+      msg: "{{ CLONES }}"
   - name: Debug - out network specs
     ansible.builtin.debug:
       msg: "{{ NETWORKS }}"
@@ -94,4 +116,4 @@
       msg: "{{ DISKS }}"
   - name: Debug - out disk references
     ansible.builtin.debug:
-      msg: "{{ DISK_REFERENCE }}"
+      msg: "{{ DISK_REFERENCE | default([]) }}"
