@@ -17,7 +17,7 @@ TARGET_DIR="./target-ai-working-dir"
 
 
 # Define file extensions to copy
-EXTENSIONS=("md" "py" "yaml" "yml")
+EXTENSIONS=( "py" "yaml" "yml")
 
 # Create target directory if it doesn't exist
 mkdir -p "${TARGET_DIR}"

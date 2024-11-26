@@ -1,0 +1,18 @@
+# ./roles/domain_clone/tasks/_main.yaml
+
+- name: Assert that required variables are defined
+  ansible.builtin.assert:
+    that:
+      - state is defined
+      - state in ['present', 'absent']
+      - CLONES is defined
+      - PROJECT_NAME is defined
+      - POOL_NAME is defined
+    quiet: true
+
+- name: Set facts for state of clone procedure
+  ansible.builtin.set_fact:
+    domain_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml'}}"
+
+- name: Include domain action tasks
+  ansible.builtin.include_tasks: "{{ domain_action }}"

@@ -26,7 +26,7 @@
 
 - name: Assign network information
   ansible.builtin.set_fact:
-    NETWORKS: "{{ _networks + [_oob_network] }}"
+    NETWORKS: "{{ _networks | default([])+ [_oob_network] }}"
 
 - name: DEBUG - Rendered dict for all Networks as list
   ansible.builtin.debug:
