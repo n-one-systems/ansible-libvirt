@@ -215,3 +215,41 @@ class NetworkUtils:
             pass
 
         return None
+
+    def refresh_network(self, network_name: str = None) -> tuple[bool, str]:
+        """
+        Refresh network state to ensure up-to-date information
+
+        Args:
+            network_name: Optional name of specific network to refresh
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            if network_name:
+                networks = [self.conn.networkLookupByName(network_name)]
+            else:
+                networks = self.conn.listAllNetworks()
+
+            refreshed = []
+            failed = []
+
+            for network in networks:
+                try:
+                    if network.isActive():
+                        # Force a refresh of the network's state
+                        network.destroy()
+                        network.create()
+                    refreshed.append(network.name())
+                except libvirt.libvirtError as e:
+                    failed.append((network.name(), str(e)))
+
+            if failed:
+                failures = '; '.join([f"{name}: {error}" for name, error in failed])
+                return False, f"Failed to refresh networks: {failures}"
+
+            return True, f"Successfully refreshed networks: {', '.join(refreshed)}"
+
+        except libvirt.libvirtError as e:
+            return False, str(e)

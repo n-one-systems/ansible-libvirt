@@ -9,15 +9,20 @@
       - state in ['present', 'absent']
     quiet: true
 
-- name: Determine devices to process
-  ansible.builtin.set_fact:
-    disks_to_process: "{{ DISK_REFERENCE | default([]) }}"
-    interfaces_to_process: "{{ INTERFACE_REFERENCE | default([]) }}"
+- name: Debug - Disks to process
+  ansible.builtin.debug:
+    msg:
+    - "{{ DISK_REFERENCE }}"
+    - "{{ INTERFACE_REFERENCE }}"
 
 - name: Process disks
-  when: disks_to_process | length > 0
+  when: DISK_REFERENCE | length > 0
   ansible.builtin.include_tasks: _process_disks.yaml
+  vars:
+    disks_to_process: "{{ DISK_REFERENCE }}"
 
 - name: Process interfaces
-  when: interfaces_to_process | length > 0
+  when: INTERFACE_REFERENCE | length > 0
   ansible.builtin.include_tasks: _process_interfaces.yaml
+  vars:
+    interfaces_to_process: "{{ INTERFACE_REFERENCE }}"

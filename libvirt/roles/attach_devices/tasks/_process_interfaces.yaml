@@ -1,11 +1,29 @@
 # ./roles/attach_devices/tasks/_process_interfaces.yaml
 # nsys-ai-claude-3.5
 
+- name: Refresh Networks
+  nsys.libvirt.refresh_resources:
+    resource: network
+    name: "{{ item.reference }}"
+  loop: "{{ interfaces_to_process }}"
+
 - name: Process network interface attachments
   nsys.libvirt.attach_network:
     network_name: "{{ interface_ref.reference }}"
     domain_name: "{{ interface_ref.target_domain }}"
     connected: "{{ interface_ref.connected | default(true) }}"
+    mac_address: "{{ interface_ref.mac | default(omit) }}"
   loop: "{{ interfaces_to_process }}"
   loop_control:
     loop_var: interface_ref
+
+- name: Update dhcp reservation if mac and ip are provided
+  nsys.libvirt.update_dhcp_reservation:
+    network_name: "{{ interface_ref.reference }}"
+    domain_name: "{{ interface_ref.target_domain }}"
+    ip_address: "{{ interface_ref.ip | ansible.utils.ipaddr('address') }}"
+    mac_address: "{{ interface_ref.mac }}"
+  loop: "{{ interfaces_to_process }}"
+  loop_control:
+    loop_var: interface_ref
+  when: interface_ref.ip is defined and interface_ref.mac is defined
