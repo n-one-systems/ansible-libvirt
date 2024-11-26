@@ -1,0 +1,10 @@
+# ./roles/libvirt_storage_pool/defaults/main.yml
+---
+# URI of the hypervisor
+uri: "qemu:///system"
+
+# Pool configuration
+pool_dir: "/var/lib/libvirt/images/{{ POOL_NAME }}"
+
+# libvirt default user
+libvirt_user: "libvirt-qemu"

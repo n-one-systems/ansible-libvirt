@@ -1,0 +1,59 @@
+# ./roles/molecule_handler/tasks/_create.yaml
+
+- name: Generate Seed for molecule (molecule_ephemeral_directory is used as seed)
+  ansible.builtin.set_fact:
+    project_base_dir: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}"
+
+- name: Transform Molecule var structure into usable dicts
+  ansible.builtin.include_role:
+    name: nsys.libvirt.molecule_transformer
+  vars:
+    yaml_content: "{{ molecule_yml.platforms }}"
+    project_name: "{{ lookup('ansible.builtin.password', '/dev/null', seed=project_base_dir, chars=['ascii_lowercase','digits'], length=5 ) }}"
+    state: present
+
+- name: Setup libvirt storage pool
+  ansible.builtin.include_role:
+    name: nsys.libvirt.libvirt_storage_pool
+  vars:
+    state: present
+    yaml_content:
+
+- name: Setup libvirt disks
+  ansible.builtin.include_role:
+    name: nsys.libvirt.libvirt_disks
+  vars:
+    state: present
+
+- name: Setup libvirt networks
+  ansible.builtin.include_role:
+    name: nsys.libvirt.libvirt_networks
+  vars:
+    state: present
+
+- name: Create cloud-init config for VMs to be provisioned
+  ansible.builtin.include_role:
+    name: nsys.libvirt.cloud_init_config
+
+- name: Setup libvirt domains
+  ansible.builtin.include_role:
+    name: nsys.libvirt.libvirt_domains
+  vars:
+    state: present
+- name: Attache devices to domains
+  ansible.builtin.include_role:
+    name: nsys.libvirt.attach_devices
+  vars:
+    state: present
+
+- name: Start VMs
+  nsys.libvirt.domain_power_state:
+    name: "{{ item.name }}"
+    state: "{{ item.power_state | default('running') }}"
+  loop: "{{ DOMAIN_SPECS }}"
+
+
+- name: Wait for VM startup
+  ansible.builtin.wait_for:
+    timeout: 10
+

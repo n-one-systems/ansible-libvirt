@@ -1,0 +1,29 @@
+# ./roles/libvirt_networks/tasks/main.yaml
+#
+# expects NETWORKS to be defined in the playbook
+# NETWORKS: List of networks to create - see README.md for details
+
+- name: Assert that state is defined
+  ansible.builtin.assert:
+    that:
+      - state is defined
+      - state in ['present', 'absent']
+      - NETWORKS is defined
+      - PROJECT_NAME is defined
+    quiet: true
+
+- name: DEBUG - Setup Networks to modify
+  ansible.builtin.debug:
+    msg: "{{ NETWORKS }}"
+  when: ansible_verbosity >= 1
+
+- name: Determine network action
+  ansible.builtin.set_fact:
+    network_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml' }}"
+
+- name: Include network action tasks
+  ansible.builtin.include_tasks: "{{ network_action }}"
+  vars:
+    networks: "{{ NETWORKS }}"
+    project_name: "{{ PROJECT_NAME }}"
+

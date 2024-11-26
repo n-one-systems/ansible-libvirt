@@ -1,0 +1,49 @@
+# ./roles/cloud_init_config/tasks/main.yml
+# nsys-ai-claude-3.5
+
+# adds a cloud-init configuration to the Domains and uploads iso into the storage pool
+# updates disk reference list to include cloud-init iso
+
+- name: Assert that required variables are set
+  ansible.builtin.assert:
+    that:
+      - DOMAIN_SPECS is defined
+      - POOL_NAME
+      - POOL_DIR
+      - INTERFACE_REFERENCE
+
+- name: Create SSH key directory
+  ansible.builtin.file:
+    path: "{{ ssh_key_path }}"
+    state: directory
+    mode: '0700'
+
+- name: Generate SSH key pair
+  community.crypto.openssh_keypair:
+    path: "{{ ssh_key_path }}/id_{{ ssh_key_type }}"
+    type: "{{ ssh_key_type }}"
+    size: "{{ ssh_key_bits }}"
+    state: present
+  register: ssh_key
+
+- name: Create cloud-init output directory
+  ansible.builtin.file:
+    path: "{{ cloud_init_output_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: debug
+  ansible.builtin.debug:
+    msg: "{{ DOMAIN_SPECS }}"
+
+- name: Process each VM specification
+  ansible.builtin.include_tasks: _process_vm.yaml
+  loop: "{{ DOMAIN_SPECS }}"
+  loop_control:
+    loop_var: vm
+  when: vm.type == "vm" and vm.cloud_init is defined and vm.cloud_init
+
+- name: Debug - Updated Disk reference list
+  ansible.builtin.debug:
+    msg: "{{ DISK_REFERENCE }}"
+  when: ansible_verbosity >= 1

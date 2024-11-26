@@ -1,0 +1,20 @@
+- name: Assert that state is defined
+  ansible.builtin.assert:
+    that:
+      - state is defined
+      - state in ['present', 'absent']
+      - DOMAIN_SPECS is defined
+      - PROJECT_NAME is defined
+      - POOL_NAME is defined
+    quiet: true
+
+- name: Set facts for state of vms
+  ansible.builtin.set_fact:
+    vm_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml'}}"
+
+- name: Include vm action tasks
+  ansible.builtin.include_tasks: "{{ vm_action }}"
+  vars:
+    vm_specs: "{{ DOMAIN_SPECS }}"
+    project_name: "{{ PROJECT_NAME }}"
+    pool_name: "{{ POOL_NAME }}"

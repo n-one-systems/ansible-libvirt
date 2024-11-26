@@ -1,0 +1,16 @@
+# ./roles/molecule_transformer/tasks/_create.yaml
+
+- name: assert that list of vm_specs is defined
+  assert:
+    that:
+      - vm_specs is defined
+      - vm_specs | length > 0
+      - pool_name is defined
+
+- name: Create virtual machines
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    command: define
+    xml: "{{ lookup('template', 'domain-template.xml.j2') }}"
+    uri: "{{ uri }}"
+  loop: "{{ vm_specs }}"

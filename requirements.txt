@@ -1,3 +1,7 @@
 ansible-core
 molecule
 libvirt-python
+pytest
+lxml
+netaddr
+passlib

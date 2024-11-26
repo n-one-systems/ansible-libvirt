@@ -1,0 +1,7 @@
+# ./roles/libvirt_storage_pool/defaults/main.yml
+
+default_libvirt_base_path: /var/lib/libvirt/
+default_molecule_oob_network_name: molecule-oob
+default_molecule_oob_network_address: "192.0.2.0/24"
+  # RFC 5737 TEST-NET-1 address block can be used for documentation and examples
+  # we use it as oob NAT network for molecule, to avoid conflicts with real networks

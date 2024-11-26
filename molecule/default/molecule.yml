@@ -1,0 +1,59 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+driver:
+  name: default
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      interpreter_python: auto_silent
+verifier:
+  name: ansible
+platforms:
+  - name: first-instance
+    type: vm
+    power_state: poweroff
+    cloud_init: true
+    cpu: 1
+    memory: 1024
+    interfaces:
+    - network: default
+    - network: custom-net
+      ip: 192.168.18.22/24
+      connected: false
+    disks:
+    - name: system
+      capacity: 15
+    - name: install-iso
+      path: "~/Downloads/debian-12.7.0-amd64-netinst.iso"
+  - name: second-instance
+    type: vm
+    cloud_init: true
+    cpu: 2
+    memory: 2048
+    interfaces:
+      - network: default
+      - network: custom-net
+        ip: 192.168.18.100/24
+    disks:
+      - name: system
+        capacity: 15
+        boot_order: 1
+  - name: internal-net
+    type: network
+    forwarding: routed
+    cidr: 172.19.0.0/24
+    dhcp:
+      start: 172.19.0.10
+      end: 172.19.0.50
+  - name: custom-net
+    type: network
+    forwarding: nat
+    cidr: 192.168.18.0/24
+  - name: USB-DRIVE
+    type: disk
+    capacity: 8
+    format: qcow2

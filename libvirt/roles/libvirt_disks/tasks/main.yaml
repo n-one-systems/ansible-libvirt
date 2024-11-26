@@ -1,0 +1,27 @@
+# ./roles/libvirt_disks/tasks/main.yaml
+- name: Assert that state is defined
+  ansible.builtin.assert:
+    that:
+      - state is defined
+      - state in ['present', 'absent']
+      - DISKS is defined
+      - POOL_NAME is defined
+    fail_msg: "state must be defined and either 'present' or 'absent'"
+
+- name: DEBUG - Disks to be modified
+  ansible.builtin.debug:
+    msg: "{{ DISKS }}"
+  when: ansible_verbosity >= 1
+
+- name: Determine disk action
+  ansible.builtin.set_fact:
+    disk_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml' }}"
+
+- name: Include tasks for disks
+  ansible.builtin.include_tasks: "{{ disk_action }}"
+  vars:
+    pool_name: "{{ POOL_NAME }}"
+  loop: "{{ DISKS }}"
+  loop_control:
+    loop_var:
+      disk

@@ -1,0 +1,34 @@
+# ./roles/molecule_transformer/tasks/_domain.yaml
+
+# Takes a molecule provided yaml structure and returns a list of VMs with their interfaces and disks as references
+# RETURNS:
+#   DOMAIN_SPECS        - spec of Domains to create/modify
+#   INTERFACE_REFERENCE - list of interfaces associated with their Domains
+#   DISK_REFERENCE      - list of Disks associated with their Domain
+
+- name: Transform VM configurations
+  set_fact:
+    _transformed_vms: >-
+      {{
+        yaml_content | 
+        selectattr('type', 'equalto', 'vm') |
+        list
+      }}
+
+- name: Include reference building for interfaces and disks
+  include_tasks: _domain_references.yaml
+  loop: "{{ _transformed_vms }}"
+  loop_control:
+      loop_var: vm
+
+- name: Set export variable
+  set_fact:
+    DOMAIN_SPECS: "{{ _vms_as_dict }}"
+
+- name: DEBUG - Rendered dict for Domains, Interfaces and Disks
+  ansible.builtin.debug:
+    msg:
+    - "{{ DOMAIN_SPECS }}"
+    - "{{ INTERFACE_REFERENCE }}"
+    - "{{ DISK_REFERENCE }}"
+  when: ansible_verbosity >= 1

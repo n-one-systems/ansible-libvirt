@@ -1,0 +1,9 @@
+# ./roles/libvirt_vms/defaults/main.yaml
+
+uri: qemu:///system
+
+domain_defaults:
+  memory: 1024
+  cpus: 1
+  disk_prefix: sd     # sets the disk prefix for the disks ie. sda, sdb, sdc, etc.
+  disk_bus: virtio

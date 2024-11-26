@@ -1,0 +1,19 @@
+{# ./roles/cloud_init_config/templates/network-config.yaml.j2
+# nsys-ai-claude-3.5 #}
+version: 2
+ethernets:
+{% for interface in interfaces %}
+  eth{{ loop.index0 }}:
+    {% if interface.ip is defined %}
+    addresses:
+      - {{ interface.ip }}
+    {% else %}
+    dhcp4: true
+    {% endif %}
+    match:
+      name: eth*
+    set-name: eth{{ loop.index0 }}
+    {% if wait_for_networking | bool %}
+    wait-online: false
+    {% endif %}
+{% endfor %}

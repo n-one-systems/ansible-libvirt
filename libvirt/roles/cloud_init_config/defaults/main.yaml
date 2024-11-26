@@ -1,0 +1,37 @@
+# ./roles/cloud_init_config/defaults/main.yml
+# nsys-ai-claude-3.5
+
+# Default user configuration
+default_user: molecule
+default_password: molecule
+
+# SSH key generation
+ssh_key_type: "ed25519"
+ssh_key_bits: 4096
+ssh_key_path: "{{ project_base_dir }}/ssh"
+
+# Cloud-init output configuration
+cloud_init_output_dir: "{{ project_base_dir }}/cloud-init"
+
+# Default user settings
+user_shell: /bin/bash
+user_sudo: true
+user_sudo_nopasswd: true
+
+# System configuration
+timezone: UTC
+locale: de_DE.UTF-8
+keyboard_layout: de
+
+# Network configuration
+configure_network: true
+wait_for_networking: true
+
+# Package management
+package_upgrade: true
+reboot_if_required: true
+
+# Default cloud-init templates
+user_data_template: "user-data.yaml.j2"
+network_data_template: "network-config.yaml.j2"
+meta_data_template: "meta-data.yaml.j2"

@@ -1,0 +1,9 @@
+# ./role/molecule_handler/tasks/main.yaml
+- name: Assert that molecule action is defined
+  ansible.builtin.assert:
+    that:
+      - molecule_action is defined
+      - molecule_action in ['create', 'destroy']
+    quiet: true
+- name: Include actions
+  ansible.builtin.include_tasks: "_{{ molecule_action }}.yaml"
