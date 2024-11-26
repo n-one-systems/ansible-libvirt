@@ -32,8 +32,9 @@
       reference: "{{ default_molecule_oob_network_name }}"
       ip: >-
         {{ default_molecule_oob_network_address | 
-        ansible.utils.ipaddr( 254 | random(seed=PROJECT_NAME+domain.name)) | 
+        ansible.utils.ipaddr( 244 | random(seed=PROJECT_NAME+domain.name) + 10 ) | 
         ansible.utils.ipaddr('host') }}
+      mac: "{{ default_molecule_oob_mac_prefix | community.general.random_mac(seed=PROJECT_NAME+domain.name) }}"
       target_domain: "{{ domain.name }}"
       connected: "{{true}}"
 

@@ -23,6 +23,7 @@
     _oob_network:
       name: "{{default_molecule_oob_network_name }}"
       cidr: "{{default_molecule_oob_network_address }}"
+      dhcp: true
 
 - name: Assign network information
   ansible.builtin.set_fact:

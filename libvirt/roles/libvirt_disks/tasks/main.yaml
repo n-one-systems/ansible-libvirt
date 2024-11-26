@@ -17,6 +17,11 @@
   ansible.builtin.set_fact:
     disk_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml' }}"
 
+- name: Refresh storage pool
+  nsys.libvirt.refresh_resources:
+    resource: storage_pool
+    name: "{{ POOL_NAME }}"
+
 - name: Include tasks for disks
   ansible.builtin.include_tasks: "{{ disk_action }}"
   vars:

@@ -53,15 +53,15 @@
     state: present
   when: CLONES is defined and CLONES | length > 0
 
+- name: Attache devices to domains
+  ansible.builtin.include_role:
+    name: nsys.libvirt.attach_devices
+  vars:
+    state: present
+
 - name: fail here
   ansible.builtin.fail:
     msg: "This is a failure"
-
-#- name: Attache devices to domains
-#  ansible.builtin.include_role:
-#    name: nsys.libvirt.attach_devices
-#  vars:
-#    state: present
 
 - name: Start VMs
   nsys.libvirt.domain_power_state:

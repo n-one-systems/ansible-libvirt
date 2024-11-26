@@ -17,6 +17,10 @@
     msg: "{{ NETWORKS }}"
   when: ansible_verbosity >= 1
 
+- name: Refresh Networks
+  nsys.libvirt.refresh_resources:
+    resource: network
+
 - name: Determine network action
   ansible.builtin.set_fact:
     network_action: "{{ '_remove.yaml' if state == 'absent' else '_create.yaml' }}"
