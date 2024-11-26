@@ -18,33 +18,50 @@
   vars:
     state: present
     yaml_content:
+  # TODO: create a meaningful way of avoiding to create a pool if none is required
 
 - name: Setup libvirt disks
   ansible.builtin.include_role:
     name: nsys.libvirt.libvirt_disks
   vars:
     state: present
+  when: DISKS is defined and DISKS | length > 0
 
 - name: Setup libvirt networks
   ansible.builtin.include_role:
     name: nsys.libvirt.libvirt_networks
   vars:
     state: present
+  when: NETWORKS is defined and NETWORKS | length > 0
 
 - name: Create cloud-init config for VMs to be provisioned
   ansible.builtin.include_role:
     name: nsys.libvirt.cloud_init_config
+  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
 
 - name: Setup libvirt domains
   ansible.builtin.include_role:
     name: nsys.libvirt.libvirt_domains
   vars:
     state: present
-- name: Attache devices to domains
+  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
+
+- name: Clone Domains if needed
   ansible.builtin.include_role:
-    name: nsys.libvirt.attach_devices
+    name: nsys.libvirt.domain_clone
   vars:
     state: present
+  when: CLONES is defined and CLONES | length > 0
+
+- name: fail here
+  ansible.builtin.fail:
+    msg: "This is a failure"
+
+#- name: Attache devices to domains
+#  ansible.builtin.include_role:
+#    name: nsys.libvirt.attach_devices
+#  vars:
+#    state: present
 
 - name: Start VMs
   nsys.libvirt.domain_power_state:
