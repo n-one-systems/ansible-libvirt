@@ -1,7 +1,7 @@
-# ./tools/ai-collector.sh
+#!/bin/bash
+# ./helper-scripts/ai-collector.sh
 # nsys-ai-claude-3.5
 
-#!/bin/bash
 # attention - all files in TARGET_DIR will get removed!
 # The script recursively searches for files with specific extensions (.md, .py, .yaml, .yml) in a directory tree while respecting 
 # .gitignore rules, and copies them to a target directory with flattened filenames where path separators are converted to 
@@ -22,8 +22,11 @@ EXTENSIONS=( "py" "yaml" "yml")
 # Create target directory if it doesn't exist
 mkdir -p "${TARGET_DIR}"
 
-# clean the Directory
-rm -r ${TARGET_DIR}/*
+# clean the Directory if exists and is not empty
+if [ "$(ls -A $TARGET_DIR)" ]; then
+    echo "Cleaning target directory: ${TARGET_DIR}"
+    rm -r ${TARGET_DIR}/*
+fi
 
 # Function to check if a path is ignored by git
 is_ignored() {

@@ -1,0 +1,29 @@
+#./helper-scripts/setup-molecule-externals.yaml
+
+---
+- name: Download files to local machine
+  hosts: localhost
+  gather_facts: false
+  vars:
+    CIRROS_VERSION: "0.6.3"
+    DSL_VERSION: "2024.rc7"
+    ARCHITECTURE: "x86_64"
+    MOLECULE_FILES_DIR: "{{ playbook_dir }}/../molecule/default/files"
+    download_files:
+      - url: "https://download.cirros-cloud.net/{{CIRROS_VERSION}}/cirros-{{CIRROS_VERSION}}-{{ARCHITECTURE}}-disk.img"
+        dest: "cirros.img"
+      - url: "https://damnsmalllinux.org/download/dsl-{{DSL_VERSION}}.iso"
+        dest: "dsl.iso"
+
+  tasks:
+    - name: Ensure molecule files directory exists
+      file:
+        path: "{{ MOLECULE_FILES_DIR }}"
+        state: directory
+        mode: '0755'
+
+    - name: Download files
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ MOLECULE_FILES_DIR }}/{{ item.dest }}"
+      with_items: "{{ download_files }}"
