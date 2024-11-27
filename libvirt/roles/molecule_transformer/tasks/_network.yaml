@@ -1,35 +1,33 @@
+# ./roles/molecule_transformer/tasks/_network.yaml
 
+# RETURNS: NETWORK_SPECS
 
-# Takes a molecule provided yaml structure and returns a list of networks to work on
-# RETURNS: NETWORKS
-
-- name: Extract network entries
-  ansible.builtin.set_fact:
-    network_entries: "{{ yaml_content | selectattr('type', 'equalto', 'network') | list }}"
+- name: Initialize network list
+  set_fact:
+    _networks: []
 
 - name: Transform network information
   ansible.builtin.set_fact:
-    _networks: "{{ _networks | default([]) + [transformed_item] }}"
+    _networks: "{{ _networks + [transformed_item] }}"
   vars:
     transformed_item:
       name: "{{ PROJECT_NAME }}-{{ item.name if item.name != 'default' else 'default' }}" # if name is default, use default libvirt network
       forwarding: "{{ item.forwarding | default(omit) }}"
       cidr: "{{ item.cidr if item.name != 'default' else omit }}" # if name is default, omit cidr as it is not needed
       dhcp: "{{ item.dhcp | default(omit) }}"
-  loop: "{{ network_entries }}"
+  loop: "{{ _network_specs }}"
 
-- name: Define oob network
+- name: Merge oob network specs if provided by molecule provisioner, otherwise use defaults
   ansible.builtin.set_fact:
     _oob_network:
-      name: "{{default_molecule_oob_network_name }}"
-      cidr: "{{default_molecule_oob_network_address }}"
-      dhcp: true
+      "{{ _oob_network | combine(_global_specs.oob_network) }}"
+  when: _global_specs.oob_network is defined
 
 - name: Assign network information
   ansible.builtin.set_fact:
-    NETWORKS: "{{ _networks | default([])+ [_oob_network] }}"
+    NETWORK_SPECS: "{{ _networks + [_oob_network] }}"
 
 - name: DEBUG - Rendered dict for all Networks as list
   ansible.builtin.debug:
-    msg: "{{ NETWORKS }}"
+    msg: "{{ NETWORK_SPECS }}"
   when: ansible_verbosity >= 1

@@ -1,12 +1,14 @@
 # ./roles/molecule_transformer/tasks/_clone.yaml
 
-- name: Extract network entries
+# RETURNS: CLONE_SPECS
+
+- name: Initialize clones list
   ansible.builtin.set_fact:
-    _clone_entries: "{{ yaml_content | selectattr('type', 'equalto', 'clone') | list }}"
+    _clones_as_dict: []
 
 - name: Process cloning Domain basics
   ansible.builtin.set_fact:
-    _clones_as_dict: "{{ _clones_as_dict | default([]) + [_transformed_vm] }}"
+    _clones_as_dict: "{{ _clones_as_dict + [_transformed_vm] }}"
   vars:
     _transformed_vm:
       source_name: "{{ clone.reference }}"
@@ -14,18 +16,18 @@
       power_state: "{{ clone.power_state | default('running') }}"
       name: "{{ clone.name }}"
       linked_clone: "{{ clone.linked_clone | default(false) }}"
-  loop: "{{ _clone_entries }}"
+  loop: "{{ _clone_specs }}"
   loop_control:
     loop_var: clone
-  when: _clone_entries is defined
+  when: _clone_specs is defined
 
 - name: Assign cloning information
   ansible.builtin.set_fact:
-      CLONES: "{{ _clones_as_dict | default([]) }}"
+      CLONE_SPECS: "{{ _clones_as_dict }}"
 
 - name: DEBUG - Clones as dict
   ansible.builtin.debug:
-      msg: "{{ CLONES }}"
+    msg: "{{ CLONE_SPECS }}"
   when: ansible_verbosity >= 1
 
 

@@ -1,8 +1,13 @@
-# ./roles/libvirt_storage_pool/defaults/main.yml
+# ./roles/molecule_transformer/defaults/main.yaml
 
-default_libvirt_base_path: /var/lib/libvirt/
-default_molecule_oob_network_name: molecule-oob
-default_molecule_oob_network_address: "192.0.2.0/24"
-default_molecule_oob_mac_prefix: "52:54:00"
+storage_pool_base_dir: "/var/tmp/"
+URI: "qemu:///system"
+
+_oob_network:
+  name: molecule-oob
+  cidr: "192.0.2.0/24"
   # RFC 5737 TEST-NET-1 address block can be used for documentation and examples
   # we use it as oob NAT network for molecule, to avoid conflicts with real networks
+  mac_prefix: "52:54:00"
+  dhcp: true
+  is_oob: true
