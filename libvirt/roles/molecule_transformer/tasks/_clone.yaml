@@ -12,7 +12,7 @@
       source_name: "{{ clone.reference }}"
       type: "{{ clone.type }}"
       power_state: "{{ clone.power_state | default('running') }}"
-      clone_name: "{{ clone.name }}"
+      name: "{{ clone.name }}"
       linked_clone: "{{ clone.linked_clone | default(false) }}"
   loop: "{{ _clone_entries }}"
   loop_control:
