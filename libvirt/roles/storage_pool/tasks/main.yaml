@@ -1,3 +1,5 @@
+# ./roles/storage_pool/tasks/main.yaml
+
 - name: Assert that state is defined
   ansible.builtin.assert:
     that:
@@ -25,6 +27,3 @@
 - name: Include pool action tasks
   ansible.builtin.include_tasks: "{{ pool_action }}"
   when: do_not_delete is not defined or do_not_delete is false
-  vars:
-      pool_name: "{{ POOL_NAME }}"
-      pool_dir: "{{ POOL_DIR }}"

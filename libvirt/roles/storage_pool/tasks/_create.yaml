@@ -1,35 +1,27 @@
-# ./roles/libvirt_storage_pool/tasks/_create.yaml
+# ./roles/storage_pool/tasks/_create.yaml
 
 - name: Ensure libvirt storage pool directory exists
   ansible.builtin.file:
-    path: "{{ pool_dir }}"
+    path: "{{ POOL_DIR }}"
     state: directory
     mode: '0755'
   register: libvirt_pool_creation
 
-- name: Ensure correct permissions for libvirt storage pool directory
-  ansible.builtin.file:
-    path: "{{ pool_dir | dirname | dirname }}"
-    state: directory
-    recurse: true
-    mode: o=rX
-  when: libvirt_pool_creation.changed
-
 - name: Ensure libvirt storage pool is defined
   community.libvirt.virt_pool:
-    name: "{{ pool_name }}"
+    name: "{{ POOL_NAME }}"
     state: present
-    uri: "{{ uri }}"
+    uri: "{{ URI }}"
     xml: "{{lookup('template', 'storage-pool-template.xml.j2')}}"
 
 - name: Activate libvirt storage pool if not active
   community.libvirt.virt_pool:
-    name: "{{ pool_name }}"
-    uri: "{{ uri }}"
+    name: "{{ POOL_NAME }}"
+    uri: "{{ URI }}"
     state: active
 
 - name: Ensure of auto start libvirt storage pool
   community.libvirt.virt_pool:
-    name: "{{ pool_name }}"
-    uri: "{{ uri }}"
+    name: "{{ POOL_NAME }}"
+    uri: "{{ URI }}"
     autostart: true

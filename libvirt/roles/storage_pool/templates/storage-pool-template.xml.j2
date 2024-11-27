@@ -1,7 +1,7 @@
 {# ./molecule-libvirt-driver/templates/storage-pool-template.xml.j2 #}
 <pool type='dir'>
-    <name>{{ pool_name }}</name>
+    <name>{{ POOL_NAME }}</name>
     <target>
-        <path>{{ pool_dir }}</path>
+        <path>{{ POOL_DIR }}</path>
   </target>
 </pool>
