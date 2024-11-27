@@ -1,4 +1,4 @@
-# ./roles/domain_clone/tasks/_main.yaml
+# ./roles/clones/tasks/_main.yaml
 
 - name: Assert that required variables are defined
   ansible.builtin.assert:

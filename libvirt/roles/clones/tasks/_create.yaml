@@ -1,4 +1,4 @@
-# ./role/domain_clone/tasks/_create.yaml
+# ./role/clones/tasks/_create.yaml
 #
 - name: Create a full clone of a Domain
   nsys.libvirt.clone_domain:
@@ -6,6 +6,6 @@
     clone_name: "{{ clone.name }}"
     linked_clone: "{{ clone.linked_clone | default(false) }}"
     target_storage_pool: "{{ POOL_NAME }}"
-  loop: "{{ CLONES }}"
+  loop: "{{ CLONE_SPECS }}"
   loop_control:
     loop_var: clone
