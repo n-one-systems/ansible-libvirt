@@ -4,7 +4,7 @@ storage_pool_base_dir: "/var/tmp/"
 URI: "qemu:///system"
 
 _oob_network:
-  name: molecule-oob
+  name: "{{ PROJECT_NAME }}-molecule-oob"
   cidr: "192.0.2.0/24"
   # RFC 5737 TEST-NET-1 address block can be used for documentation and examples
   # we use it as oob NAT network for molecule, to avoid conflicts with real networks
