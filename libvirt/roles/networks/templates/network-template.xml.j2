@@ -3,7 +3,7 @@
 {%- set ipv4_default_gw = network.cidr |  ansible.utils.ipaddr("1") | ansible.utils.ipaddr("address") -%}
 {%- set dhcpv4_default_start = network.cidr | ansible.utils.ipaddr("10") | ansible.utils.ipaddr("address") -%}
 {%- set dhcpv4_default_end = network.cidr | ansible.utils.ipaddr("-5") | ansible.utils.ipaddr("address") -%}
-{%- set shortname = project_name | truncate(12, true, "") + network_index | string  %}
+{%- set shortname = PROJECT_NAME | truncate(12, true, "") + network_index | string  %}
 <network>
     <name>{{ network.name }}</name>
     {%- if network.type is undefined or network.type == 'nat' %}

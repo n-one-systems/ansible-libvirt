@@ -1,3 +1,0 @@
-# ./roles/libvirt_networks/defaults/main.yaml
-
-uri: qemu:///system

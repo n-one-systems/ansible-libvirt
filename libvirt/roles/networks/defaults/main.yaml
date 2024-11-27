@@ -1,0 +1,3 @@
+# ./roles/networks/defaults/main.yaml
+
+URI: qemu:///system
