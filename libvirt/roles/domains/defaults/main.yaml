@@ -1,6 +1,6 @@
-# ./roles/libvirt_vms/defaults/main.yaml
+# ./roles/domains/defaults/main.yaml
 
-uri: qemu:///system
+URI: qemu:///system
 
 domain_defaults:
   memory: 1024

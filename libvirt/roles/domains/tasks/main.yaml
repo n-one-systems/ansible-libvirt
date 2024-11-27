@@ -1,3 +1,4 @@
+# ./roles/domains/tasks/main.yaml
 - name: Assert that state is defined
   ansible.builtin.assert:
     that:
@@ -14,7 +15,3 @@
 
 - name: Include vm action tasks
   ansible.builtin.include_tasks: "{{ vm_action }}"
-  vars:
-    vm_specs: "{{ DOMAIN_SPECS }}"
-    project_name: "{{ PROJECT_NAME }}"
-    pool_name: "{{ POOL_NAME }}"

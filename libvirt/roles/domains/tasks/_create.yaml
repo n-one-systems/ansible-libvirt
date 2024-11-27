@@ -1,0 +1,9 @@
+# ./roles/domains/tasks/_create.yaml
+
+- name: Create virtual machines
+  community.libvirt.virt:
+    name: "{{ item.name }}"
+    command: define
+    xml: "{{ lookup('template', 'domain-template.xml.j2') }}"
+    uri: "{{ URI }}"
+  loop: "{{ DOMAIN_SPECS }}"
