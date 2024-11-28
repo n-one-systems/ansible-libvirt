@@ -1,14 +1,22 @@
 # ./roles/molecule_handler/tasks/_populate.yaml
 # nsys-ai-claude-3.5
 
-- name: Initialize instance configuration
+- name: Assert that all expected vars are defined
+  ansible.builtin.assert:
+    that:
+      - DOMAIN_SPECS or CLONES is defined
+      - INTERFACE_REFERENCE is defined
+      - default_molecule_oob_network_name is defined
+
+- name: Initialize instance configuration and merge expected domain lists
   ansible.builtin.set_fact:
     instance_conf: []
+    _expected_domains: "{{ DOMAIN_SPECS | map(attribute='name') | list + CLONES | map(attribute='name') | list }}"
 
 - name: Get domain information from libvirt
   nsys.libvirt.domain_info:
     name: "{{ item.name }}"
-  loop: "{{ DOMAIN_SPECS }}"
+  loop: "{{ _expected_domains }}"
   register: domain_info
 
 - name: Get network information for default molecule OOB network
@@ -18,9 +26,20 @@
 
 - name: Get interface references for each domain
   ansible.builtin.set_fact:
-    domain_interfaces: "{{ INTERFACE_REFERENCE | selectattr('target_domain', 'equalto', item.name) | list }}"
-  loop: "{{ DOMAIN_SPECS }}"
+    # selects from INTERFACE_REFERENCE where target_domain is equal to the domain name and reference is equal to the default molecule OOB network name
+    domain_interfaces: "{{ INTERFACE_REFERENCE | selectattr('target_domain', 'equalto', item.name) | 
+                          selectattr('reference', 'equalto', default_molecule_oob_network_name) | list }}"
+  loop: "{{ _expected_domains }}"
   register: domain_interfaces
+
+- name: debug domain interfaces
+  ansible.builtin.debug:
+    var: domain_interfaces
+
+- name: fail here
+  ansible.builtin.fail:
+      msg: "This is a failure"
+
 
 - name: Build instance configuration dictionary
   ansible.builtin.set_fact:
@@ -38,7 +57,7 @@
       ssh_key_private: "{{ ssh_key_private }}"
       become_method: sudo
       become: true
-  loop: "{{ DOMAIN_SPECS }}"
+  loop: "{{ _expected_domains }}"
   loop_control:
     index_var: idx
 

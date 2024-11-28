@@ -1,7 +1,0 @@
-# ./roles/storage_pool/defaults/main.yml
----
-# URI of the hypervisor
-URI: "qemu:///system"
-
-# Pool configuration
-POOL_DIR: "/var/tmp/{{ POOL_NAME }}"

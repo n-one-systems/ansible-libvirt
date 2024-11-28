@@ -1,0 +1,8 @@
+# ./roles/domains/tasks/_remove.yaml
+
+- name: Remove virtual machines
+  nsys.libvirt.domain:
+    name: "{{ item.name }}"
+    state: absent
+    uri: "{{ URI }}"
+  loop: "{{ DOMAIN_SPECS }}"

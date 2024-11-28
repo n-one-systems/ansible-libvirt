@@ -1,67 +1,44 @@
 # ./roles/molecule_handler/tasks/_create.yaml
 
-- name: Generate Seed for molecule (molecule_ephemeral_directory is used as seed)
-  ansible.builtin.set_fact:
-    project_base_dir: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}"
-
 - name: Transform Molecule var structure into usable dicts
   ansible.builtin.include_role:
     name: nsys.libvirt.molecule_transformer
   vars:
-    yaml_content: "{{ molecule_yml.platforms }}"
     project_name: "{{ lookup('ansible.builtin.password', '/dev/null', seed=project_base_dir, chars=['ascii_lowercase','digits'], length=5 ) }}"
     state: present
 
-- name: Setup libvirt storage pool
-  ansible.builtin.include_role:
-    name: nsys.libvirt.libvirt_storage_pool
-  vars:
-    state: present
-    yaml_content:
-  # TODO: create a meaningful way of avoiding to create a pool if none is required
-
-- name: Setup libvirt disks
-  ansible.builtin.include_role:
-    name: nsys.libvirt.libvirt_disks
-  vars:
-    state: present
-  when: DISKS is defined and DISKS | length > 0
-
 - name: Setup libvirt networks
-  ansible.builtin.include_role:
-    name: nsys.libvirt.libvirt_networks
-  vars:
-    state: present
-  when: NETWORKS is defined and NETWORKS | length > 0
+  ansible.builtin.include_tasks: "networks/create.yaml"
+  when: NETWORK_SPECS is defined and NETWORK_SPECS | length > 0
 
-- name: Create cloud-init config for VMs to be provisioned
-  ansible.builtin.include_role:
-    name: nsys.libvirt.cloud_init_config
-  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
+- name: Setup libvirt storage pool
+  ansible.builtin.include_tasks: "pools/create.yaml"
 
 - name: Setup libvirt domains
-  ansible.builtin.include_role:
-    name: nsys.libvirt.libvirt_domains
-  vars:
-    state: present
+  ansible.builtin.include_tasks: "domains/create.yaml"
   when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
 
 - name: Clone Domains if needed
-  ansible.builtin.include_role:
-    name: nsys.libvirt.domain_clone
-  vars:
-    state: present
-  when: CLONES is defined and CLONES | length > 0
+  ansible.builtin.include_tasks: "clones/create.yaml"
+  when: CLONE_SPECS is defined and CLONE_SPECS | length > 0
+
+- name: Setup libvirt disks
+  ansible.builtin.include_tasks: "disks/create.yaml"
+  when: DISK_SPECS is defined and DISK_SPECS | length > 0
+
+#- name: Create cloud-init config for VMs to be provisioned
+#  ansible.builtin.include_role:
+#    name: nsys.libvirt.cloud_init_config
+#  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
 
 - name: Attache devices to domains
-  ansible.builtin.include_role:
-    name: nsys.libvirt.attach_devices
-  vars:
-    state: present
+  ansible.builtin.include_tasks: "devices/create.yaml"
 
+# fail here
 - name: fail here
   ansible.builtin.fail:
-    msg: "This is a failure"
+    msg: "This is a fail task"
+
 
 - name: Start VMs
   nsys.libvirt.domain_power_state:
@@ -69,8 +46,9 @@
     state: "{{ item.power_state | default('running') }}"
   loop: "{{ DOMAIN_SPECS }}"
 
+- name: Final message
+  ansible.builtin.debug:
+    msg: "VMs are up and running - handing off to populate molecule inventory"
 
-- name: Wait for VM startup
-  ansible.builtin.wait_for:
-    timeout: 10
-
+- name: Include actions
+  ansible.builtin.include_tasks: "_populate.yaml"

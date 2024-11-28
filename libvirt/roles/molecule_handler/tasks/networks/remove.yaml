@@ -1,0 +1,9 @@
+- name: Remove network
+  nsys.libvirt.network:
+    name: "{{ network.name }}"
+    state: absent
+  loop: "{{ NETWORK_SPECS }}"
+  when: network.name != 'default'
+  loop_control:
+    loop_var: network
+    index_var: network_index

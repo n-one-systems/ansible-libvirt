@@ -1,5 +1,0 @@
-# ./roles/attach_devices/defaults/main.yaml
-# nsys-ai-claude-3.5
-
-# URI of the hypervisor
-uri: qemu:///system

@@ -1,0 +1,6 @@
+- name: Remove virtual machines
+  nsys.libvirt.domain:
+    name: "{{ item.name }}"
+    state: absent
+    uri: "{{ URI }}"
+  loop: "{{ CLONE_SPECS }}"

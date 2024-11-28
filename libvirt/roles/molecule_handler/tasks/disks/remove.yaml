@@ -1,0 +1,8 @@
+    - name: Remove volume for disks
+      nsys.libvirt.libvirt_volume:
+        name: "{{ disk.name }}"
+        pool: "{{ POOL_NAME }}"
+        state: absent
+      loop: "{{ DISK_SPECS }}"
+      loop_control:
+        loop_var: disk

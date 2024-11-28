@@ -1,0 +1,11 @@
+- name: Destroy storage pool
+  nsys.libvirt.storage_pool:
+    name: "{{ POOL_NAME }}"
+    state: absent   # Will stop and undefine the pool
+    uri: "{{ URI }}"
+  when: POOL_NAME is defined and POOL_NAME != 'default'   # we do not delete the default pool
+
+- name: Remove pool directory
+  ansible.builtin.file:
+    path: "{{ POOL_DIR }}"
+    state: absent

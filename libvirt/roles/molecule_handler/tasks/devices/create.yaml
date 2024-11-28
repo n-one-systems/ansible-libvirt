@@ -1,0 +1,13 @@
+# ./roles/devices/tasks/main.yaml
+# nsys-ai-claude-3.5
+
+
+- name: Process disks
+  when: DISK_REFERENCE | length > 0
+  ansible.builtin.include_tasks: _process_disks.yaml
+  vars:
+    disks_to_process: "{{ DISK_REFERENCE }}"
+
+- name: Process interfaces
+  when: INTERFACE_REFERENCE | length > 0
+  ansible.builtin.include_tasks: _process_interfaces.yaml

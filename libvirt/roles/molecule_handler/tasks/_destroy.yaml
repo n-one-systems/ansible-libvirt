@@ -1,0 +1,30 @@
+# ./roles/molecule_handler/tasks/_destroy.yaml
+
+# THIS is a temporary way to remove stuff !!! as a workaround for the missing destroy sequence
+- name: Transform Molecule var structure into usable dicts
+  ansible.builtin.include_role:
+    name: nsys.libvirt.molecule_transformer
+  vars:
+    project_name: "{{ lookup('ansible.builtin.password', '/dev/null', seed=project_base_dir, chars=['ascii_lowercase','digits'], length=5 ) }}"
+    state: present
+
+- name: Remove libvirt domains (clones)
+  ansible.builtin.include_tasks: "clones/remove.yaml"
+  when: CLONE_SPECS is defined and CLONE_SPECS | length > 0
+
+- name: Remove libvirt domains
+  ansible.builtin.include_tasks: "domains/remove.yaml"
+  vars:
+    state: absent
+  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
+
+- name: Remove libvirt disks
+  ansible.builtin.include_tasks: "disks/remove.yaml"
+  when: DISK_SPECS is defined and DISK_SPECS | length > 0
+
+- name: Remove networks
+  ansible.builtin.include_tasks: "networks/remove.yaml"
+  when: NETWORK_SPECS is defined and NETWORK_SPECS | length > 0
+
+- name: Remove libvirt storage pool
+  ansible.builtin.include_tasks: "pools/remove.yaml"

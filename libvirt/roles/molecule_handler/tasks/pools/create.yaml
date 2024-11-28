@@ -1,0 +1,8 @@
+- name: Create a directory storage pool
+  nsys.libvirt.storage_pool:
+    name: "{{ POOL_NAME }}"
+    pool_type: dir  # Must specify type when creating
+    target_path: "{{ POOL_DIR }}"
+    state: active
+    autostart: true # Will start on boot
+    uri: "{{ URI }}"

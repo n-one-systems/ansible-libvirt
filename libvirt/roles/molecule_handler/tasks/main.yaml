@@ -1,4 +1,20 @@
 # ./role/molecule_handler/tasks/main.yaml
+- name: Generate Seed for molecule (molecule_ephemeral_directory is used as seed)
+  ansible.builtin.set_fact:
+    project_base_dir: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}"
+
+- name: Assert that this role is called from molecule
+  ansible.builtin.assert:
+    that:
+      - molecule_yml is defined
+    quiet: true
+    fail_msg: "This role is intended to be called from molecule - missing molecule_yml"
+
+- name: Debug - Molecule provided Data in raw format
+  ansible.builtin.debug:
+    msg: "{{ molecule_yml }}"
+  when: ansible_verbosity > 1
+
 - name: Assert that molecule action is defined
   ansible.builtin.assert:
     that:

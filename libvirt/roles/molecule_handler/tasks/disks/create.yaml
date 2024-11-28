@@ -1,0 +1,27 @@
+
+- name: "Create volume"
+  nsys.libvirt.libvirt_volume:
+    name: "{{ disk.name }}"
+    pool: "{{ POOL_NAME }}"
+    format: "{{ disk.format | default('qcow2') }}"
+    capacity: "{{ disk.capacity | default('10') }}"
+    allocation: "{{ disk.allocation | default('1') }}"
+    state: present
+  loop: "{{ DISK_SPECS }}"
+  when: disk.path is not defined
+  loop_control:
+    loop_var: disk
+
+- name: "Import volume disk/iso"
+  nsys.libvirt.libvirt_volume:
+    name: "{{ disk.name }}"
+    pool: "{{ POOL_NAME }}"
+    format: "{{ disk.format | default('raw') }}"
+    capacity: "{{ disk.capacity | default('1') }}"
+    import_image: "{{ disk.path | expanduser }}"
+    import_format: "{{ disk.format | default('raw') }}"
+    state: present
+  loop: "{{ DISK_SPECS }}"
+  when: disk.path is defined
+  loop_control:
+      loop_var: disk

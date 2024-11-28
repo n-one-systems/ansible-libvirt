@@ -1,7 +1,0 @@
-# ./roles/libvirt_disks/defaults/main.yaml
-
-# uri is the URI of the hypervisor
-uri: qemu:///system
-
-# pool_name is the name of the storage pool to create the disks in
-pool_name: "default"
