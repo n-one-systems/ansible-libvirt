@@ -4,66 +4,90 @@
   - name: Assert that the required variables are defined
     assert:
       that:
-        - yaml_content is defined
         - project_name is defined
         - state is defined
         - state in ['present', 'absent']
         - project_base_dir is defined
       quiet: true
-  - name: Extract Domain names
+  - name: Extract Domain/Clone/Network/Disk Specs for processing
     set_fact:
-      __vm_names: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | map(attribute='name') | list }}"
+      _vm_specs: "{{ molecule_yml.platforms | selectattr('type', 'equalto', 'vm') | list | default([]) }}"
+      _network_specs: "{{ molecule_yml.platforms | selectattr('type', 'equalto', 'network') | list | default([]) }}"
+      _disk_specs: "{{ molecule_yml.platforms | selectattr('type', 'equalto', 'disk')  | list | default([]) }}"
+      _clone_specs: "{{ molecule_yml.platforms | selectattr('type', 'equalto', 'clone') | list | default([]) }}"
+      _global_specs: "{{ molecule_yml.provisioner.config_options.libvirt_defaults | default({}) }}"
 
-  - name: Extract Network names
-    set_fact:
-      __network_names: "{{ yaml_content | selectattr('type', 'equalto', 'network') | map(attribute='name') | list }}"
+  - name: Debug - input date passed to transformer
+    ansible.builtin.debug:
+      msg:
+      - "VM Specs:"
+      - "{{ _vm_specs }}"
+      - "Network Specs:"
+      - "{{ _network_specs }}"
+      - "Disk Specs:"
+      - "{{ _disk_specs }}"
+      - "Clone Specs:"
+      - "{{ _clone_specs }}"
+      - "Global Specs:"
+      - "{{ _global_specs }}"
+    when: ansible_verbosity >= 1
 
-  - name: Extract Disk names
-    set_fact:
-      __disk_names: "{{ yaml_content | selectattr('type', 'equalto', 'disk') | map(attribute='name') | list }}"
+  - name: collect all spec names
+    ansible.builtin.set_fact:
+      __vm_names: "{{ _vm_specs | map(attribute='name') | list }}"
+      __network_names: "{{ _network_specs | map(attribute='name') | list }}"
+      __disk_names: "{{ _disk_specs | map(attribute='name') | list }}"
+      __clone_names: "{{ _clone_specs | map(attribute='name') | list }}"
 
-  - name: Assert if names are unique
+  - name: Assert that names are unique
     ansible.builtin.assert:
-      that:
-      -  __vm_names | length == __vm_names | unique | length
-      - __network_names | length == __network_names | unique | length
-      - __disk_names | length == __disk_names | unique | length
-      fail_msg: "nNames have to be unique in same type"
+      that: item | length == item | unique | length
+      fail_msg: "Names have to be unique in same type"
       quiet: true
+    when: item | length > 0
+    loop:
+      - "{{ __vm_names }}"
+      - "{{ __network_names }}"
+      - "{{ __disk_names }}"
+      - "{{ __clone_names }}"
+
 - name: Assert block for cloud-init packages
-  when: (yaml_content | selectattr('type', 'equalto', 'vm') | selectattr('cloud_init', 'defined') | selectattr('cloud_init') | list | length) > 0
+  when: (_vm_specs | selectattr('cloud_init', 'defined') | selectattr('cloud_init' ) | list | length) > 0
   # we run this check only if we create vms that use cloud-init
   block:
-    - name: Check if genisoimage is installed
-      ansible.builtin.shell: command -v genisoimage
-      register: genisoimage_check
-      failed_when: genisoimage_check.rc != 0
+  - name: Check if genisoimage is installed
+    ansible.builtin.shell: command -v genisoimage
+    register: genisoimage_check
+    failed_when: genisoimage_check.rc != 0
+    changed_when: false
 
-    - name: Check if cloud_localds is installed
-      ansible.builtin.shell: command -v cloud-localds
-      register: cloud_localds_check
-      failed_when: cloud_localds_check.rc != 0
+  - name: Check if cloud_localds is installed
+    ansible.builtin.shell: command -v cloud-localds
+    register: cloud_localds_check
+    failed_when: cloud_localds_check.rc != 0
+    changed_when: false
 
-    - name: Assert that both required packages are installed
-      ansible.builtin.assert:
-        that:
-          - genisoimage_check.rc == 0
-          - cloud_localds_check.rc == 0
-        fail_msg: "Required packages (genisoimage and cloud-localds) are not installed"
-        success_msg: "All required packages are installed"
+  - name: Assert that both required packages are installed
+    ansible.builtin.assert:
+      that:
+        - genisoimage_check.rc == 0
+        - cloud_localds_check.rc == 0
+      fail_msg: "Required packages (genisoimage and cloud-localds) are not installed"
+      quiet: true
 
 - name: Set and initialize the project meta vars
   ansible.builtin.set_fact:
     PROJECT_NAME: "{{ project_name }}"
     PROJECT_BASE_DIR: "{{ project_base_dir }}"
+    URI: "{{ _global_specs.uri | default('qemu:///system') }}"
     POOL_NAME: ""
     POOL_DIR: ""
-    DISKS: []
+    DISK_SPECS: []
     DISK_REFERENCE: []
-    NETWORKS: []
+    NETWORK_SPECS: []
     INTERFACE_REFERENCE: []
     DOMAIN_SPECS: []
-    CLONES: []
+    CLONE_SPECS: []
 
 - name: Include storage transformation
   ansible.builtin.include_tasks: _storage.yaml
@@ -73,17 +97,19 @@
 
 - name: Include domain transformation
   ansible.builtin.include_tasks: _domain.yaml
+  when: __vm_names is defined and __vm_names | length > 0
 
 - name: Include Cloning transformation
   ansible.builtin.include_tasks: _clone.yaml
+  when: __clone_names is defined and __clone_names | length > 0
 
 - name: Include Reference transformation
-  # we do not create references for clones - this is up to the user to manage
   ansible.builtin.include_tasks: _references.yaml
-  loop: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | list }}"
+  vars:
+    _oob_interface_specs: "{{ NETWORK_SPECS | selectattr('is_oob', 'defined') | selectattr('is_oob') | first }}"
+  loop: "{{ _vm_specs + _clone_specs }}"
   loop_control:
-      loop_var: domain
-
+    loop_var: domain
 
 - name: DEBUG - block output
   when: ansible_verbosity >= 1
@@ -98,10 +124,10 @@
       msg: "{{ DOMAIN_SPECS }}"
   - name: Debug - out clone specs
     ansible.builtin.debug:
-      msg: "{{ CLONES }}"
+      msg: "{{ CLONE_SPECS }}"
   - name: Debug - out network specs
     ansible.builtin.debug:
-      msg: "{{ NETWORKS }}"
+      msg: "{{ NETWORK_SPECS }}"
   - name: Debug - out interface references
     ansible.builtin.debug:
       msg: "{{ INTERFACE_REFERENCE }}"
@@ -113,7 +139,7 @@
       msg: "{{ POOL_DIR }}"
   - name: Debug - out Disk specs
     ansible.builtin.debug:
-      msg: "{{ DISKS }}"
+      msg: "{{ DISK_SPECS }}"
   - name: Debug - out disk references
     ansible.builtin.debug:
-      msg: "{{ DISK_REFERENCE | default([]) }}"
+      msg: "{{ DISK_REFERENCE }}"

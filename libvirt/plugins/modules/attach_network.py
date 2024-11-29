@@ -1,11 +1,6 @@
 # ./plugins/modules/attach_network.py
 # nsys-ai-claude-3.5
 
-# !/usr/bin/python
-# -*- coding: utf-8 -*-
-
-# Copyright: (c) 2024, nsys.ai
-# GNU General Public License v3.0+ (see COPYING or https://www.gnu.org/licenses/gpl-3.0.txt)
 from __future__ import (absolute_import, division, print_function)
 
 __metaclass__ = type
@@ -19,11 +14,12 @@ DOCUMENTATION = r"""
     description:
         - Attach an existing libvirt network to an existing domain
         - Both network and domain must exist
-        - The network will be attached with default parameters
+        - The network will be attached with specified or default parameters
         - Will not create duplicate interfaces if network is already attached
         - Works with both running and stopped domains
         - For running domains, applies changes both to live system and persistent config
         - For stopped domains, only updates the persistent config
+        - Optionally allows setting custom MAC address for the interface
 
     options:
         network_name:
@@ -39,6 +35,13 @@ DOCUMENTATION = r"""
             required: false
             type: bool
             default: true
+        mac_address:
+            description: 
+                - Optional MAC address for the network interface
+                - Must be a valid MAC address in the format "XX:XX:XX:XX:XX:XX"
+                - If not provided, libvirt will generate one automatically
+            required: false
+            type: str
         uri:
             description: 
                 - libvirt connection uri
@@ -70,6 +73,13 @@ EXAMPLES = r"""
       nsys.libvirt.attach_network:
         network_name: default
         domain_name: testvm1
+
+    # Attach network with custom MAC address
+    - name: Attach network with specific MAC
+      nsys.libvirt.attach_network:
+        network_name: default
+        domain_name: testvm1
+        mac_address: "52:54:00:12:34:56"
 
     # Attach network but leave it disconnected
     - name: Attach disconnected network interface
@@ -109,14 +119,20 @@ RETURN = r"""
         description: Whether the domain was running when the network was attached
         type: bool
         returned: always
+    mac_address:
+        description: MAC address of the attached interface
+        type: str
+        returned: success
 """
 
+import re
 import xml.etree.ElementTree as ElementTree
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
 
 try:
     import libvirt
+
     HAS_LIBVIRT = True
 except ImportError:
     HAS_LIBVIRT = False
@@ -133,12 +149,32 @@ class NetworkAttacher:
         self.network_name = module.params['network_name']
         self.domain_name = module.params['domain_name']
         self.connected = module.params['connected']
+        self.mac_address = module.params.get('mac_address')
+
+    def validate_mac_address(self, mac_address):
+        """
+        Validate MAC address format
+
+        Args:
+            mac_address: MAC address string
+
+        Returns:
+            bool: True if valid, False otherwise
+        """
+        if not mac_address:
+            return True
+
+        mac_pattern = re.compile(r'^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$')
+        return bool(mac_pattern.match(mac_address))
 
     def validate_requirements(self):
         """
-        Validate that required network and domain exist
+        Validate that required network and domain exist and MAC address format if provided
         Returns tuple of (network, domain) objects
         """
+        if self.mac_address and not self.validate_mac_address(self.mac_address):
+            self.module.fail_json(msg=f"Invalid MAC address format: {self.mac_address}")
+
         try:
             network = self.conn.networkLookupByName(self.network_name)
             domain = self.conn.lookupByName(self.domain_name)
@@ -155,7 +191,10 @@ class NetworkAttacher:
             self.module.fail_json(msg=f"Failed to get domain state: {str(e)}")
 
     def is_network_attached(self, domain):
-        """Check if network is already attached to domain"""
+        """
+        Check if network is already attached to domain
+        Returns tuple of (bool, str) where str is existing MAC if found
+        """
         try:
             domain_xml = domain.XMLDesc(0)
             root = ElementTree.fromstring(domain_xml)
@@ -163,18 +202,23 @@ class NetworkAttacher:
             for interface in root.findall(".//interface[@type='network']"):
                 source = interface.find("source")
                 if source is not None and source.get('network') == self.network_name:
-                    return True
-            return False
+                    mac = interface.find("mac")
+                    return True, mac.get('address') if mac is not None else None
+            return False, None
         except (libvirt.libvirtError, ElementTree.ParseError) as e:
             self.module.fail_json(msg=f"Failed to check network attachment: {str(e)}")
 
     def attach_network(self, domain, network, is_running):
-        """Attach network to domain"""
+        """
+        Attach network to domain
+        Returns MAC address of attached interface
+        """
         interface_xml = f"""
         <interface type='network'>
             <source network='{network.name()}'/>
             <model type='virtio'/>
             <link state='{"up" if self.connected else "down"}'/>
+            {f"<mac address='{self.mac_address}'/>" if self.mac_address else ""}
         </interface>
         """
 
@@ -184,7 +228,20 @@ class NetworkAttacher:
                 flags |= libvirt.VIR_DOMAIN_AFFECT_LIVE
 
             domain.attachDeviceFlags(interface_xml.strip(), flags)
-            return True
+
+            # Re-read domain XML to get generated MAC if none was specified
+            if not self.mac_address:
+                domain_xml = domain.XMLDesc(0)
+                root = ElementTree.fromstring(domain_xml)
+                for interface in root.findall(".//interface[@type='network']"):
+                    source = interface.find("source")
+                    if source is not None and source.get('network') == self.network_name:
+                        mac = interface.find("mac")
+                        if mac is not None:
+                            return mac.get('address')
+
+            return self.mac_address
+
         except libvirt.libvirtError as e:
             self.module.fail_json(msg=f"Failed to attach network: {str(e)}")
 
@@ -203,12 +260,20 @@ class NetworkAttacher:
         network, domain = self.validate_requirements()
         result['domain_running'] = self.is_domain_running(domain)
 
-        if self.is_network_attached(domain):
+        is_attached, existing_mac = self.is_network_attached(domain)
+        if is_attached:
             result['already_attached'] = True
+            result['mac_address'] = existing_mac
+            # If MAC address specified and different from existing, fail
+            if self.mac_address and self.mac_address != existing_mac:
+                self.module.fail_json(
+                    msg=f"Network already attached with different MAC address: {existing_mac}"
+                )
             return result
 
         if not self.module.check_mode:
-            self.attach_network(domain, network, result['domain_running'])
+            mac_address = self.attach_network(domain, network, result['domain_running'])
+            result['mac_address'] = mac_address
 
         result['changed'] = True
         return result
@@ -219,6 +284,7 @@ def main():
         network_name=dict(type='str', required=True),
         domain_name=dict(type='str', required=True),
         connected=dict(type='bool', required=False, default=True),
+        mac_address=dict(type='str', required=False),
         uri=dict(type='str', required=False),
         remote_host=dict(type='str', required=False),
         auth_user=dict(type='str', required=False),

@@ -1,0 +1,20 @@
+# ./role/molecule_handler/tasks/networks/create.yaml
+- name: Create NAT network
+  nsys.libvirt.network:
+    name: "{{ network.name }}"
+    cidr: "{{ network.cidr }}"
+    type: "{{ network.forwarding | default(omit) }}"
+    uri: "{{ URI }}"
+    bridge: "{{ PROJECT_NAME | truncate(8, true, '') + network_index | string  }}"
+    autostart: "{{ network.autostart | default(true) }}"
+    state: "{{ network.state | default('active') }}"
+    dhcp:
+      enabled: "{{ network.dhcp is defined }}"
+      start: "{{ network.dhcp.start | default(omit) }}"
+      end: "{{ network.dhcp.end | default(omit) }}"
+    dns:
+      enabled: "{{ network.dns is defined }}"
+  loop: "{{ NETWORK_SPECS }}"
+  loop_control:
+    loop_var: network
+    index_var: network_index

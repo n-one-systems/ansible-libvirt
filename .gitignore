@@ -1,5 +1,14 @@
-# custom
+# custom - ignore all files in the directory since it is just a auto generated collection of files
 target-ai-working-dir/
+
+# custom - ignore all files in the directory since they are binary files/ images that are not needed in git
+molecule/default/files/
+
+# ignore pycharm .idea
+.idea/
+
+# only force add of helper scripts to not mess them up
+helper-scripts/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

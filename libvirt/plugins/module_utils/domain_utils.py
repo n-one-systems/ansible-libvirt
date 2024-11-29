@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import fnmatch
 import xml.etree.ElementTree as ElementTree
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 try:
     import libvirt
@@ -332,3 +332,42 @@ class DomainUtils:
 
         except libvirt.libvirtError as e:
             raise Exception(f"Failed to manage domain state: {str(e)}")
+
+    def refresh_domain(self, domain_name: str = None) -> tuple[bool, str]:
+        """
+        Refresh domain definition to ensure up-to-date state
+
+        Args:
+            domain_name: Optional name of specific domain to refresh
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            if domain_name:
+                domains = [self.conn.lookupByName(domain_name)]
+            else:
+                domains = self.conn.listAllDomains()
+
+            refreshed = []
+            failed = []
+
+            for domain in domains:
+                try:
+                    # Force a refresh of the XML definition
+                    xml = domain.XMLDesc(0)
+                    if domain.isPersistent():
+                        domain.undefine()
+                        self.conn.defineXML(xml)
+                    refreshed.append(domain.name())
+                except libvirt.libvirtError as e:
+                    failed.append((domain.name(), str(e)))
+
+            if failed:
+                failures = '; '.join([f"{name}: {error}" for name, error in failed])
+                return False, f"Failed to refresh domains: {failures}"
+
+            return True, f"Successfully refreshed domains: {', '.join(refreshed)}"
+
+        except libvirt.libvirtError as e:
+            return False, str(e)

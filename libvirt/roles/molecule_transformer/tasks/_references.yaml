@@ -10,36 +10,40 @@
     _interface_reference: []
     _disk_reference: []
 
-- name: Creates Interface Reference
-  ansible.builtin.set_fact:
-    _interface_reference: "{{ _interface_reference | default([]) + [loop_if] }}"
-  vars:
-    loop_if:
-      reference: "{{ PROJECT_NAME ~ '-' ~ interface.network if interface.network != 'default' else 'default' }}"
-      ip: "{{interface.ip | default(omit)}}"
-      target_domain: "{{domain.name}}"
-      connected: "{{interface.connected | default(true)}}"
-  loop: "{{ domain.interfaces }}"
-  loop_control:
-    loop_var: interface
-  when: domain.interfaces is defined
+- name: block interface references
+  block:
+  - name: Creates Interface Reference
+    ansible.builtin.set_fact:
+      _interface_reference: "{{ _interface_reference + [loop_if] }}"
+    vars:
+      loop_if:
+        reference: "{{ PROJECT_NAME ~ '-' ~ interface.network if interface.network != 'default' else 'default' }}"
+        ip: "{{interface.ip | default(omit)}}"
+        target_domain: "{{domain.name}}"
+        connected: "{{interface.connected | default(true)}}"
+    loop: "{{ domain.interfaces }}"
+    loop_control:
+      loop_var: interface
+    when: domain.interfaces is defined
 
-- name: Add oob interface to interface reference
-  ansible.builtin.set_fact:
-    _interface_reference: "{{ _interface_reference | default([]) + [loop_if] }}"
-  vars:
-    loop_if:
-      reference: "{{ default_molecule_oob_network_name }}"
-      ip: >-
-        {{ default_molecule_oob_network_address | 
-        ansible.utils.ipaddr( 254 | random(seed=PROJECT_NAME+domain.name)) | 
-        ansible.utils.ipaddr('host') }}
-      target_domain: "{{ domain.name }}"
-      connected: "{{true}}"
+  - name: Add oob interface to interface reference
+    ansible.builtin.set_fact:
+      _interface_reference: "{{ _interface_reference + [loop_if] }}"
+    vars:
+      loop_if:
+        reference: "{{ _oob_interface_specs.name }}"
+        ip: >-
+          {{ _oob_interface_specs.cidr | 
+          ansible.utils.ipaddr( 244 | random(seed=PROJECT_NAME+domain.name) + 10 ) | 
+          ansible.utils.ipaddr('host') }}
+        mac: "{{ _oob_interface_specs.mac_prefix | community.general.random_mac(seed=PROJECT_NAME+domain.name) }}"
+        target_domain: "{{ domain.name }}"
+        connected: "{{true}}"
+    when: _oob_interface_specs is defined
 
 - name: Creates Disk Reference
   ansible.builtin.set_fact:
-    _disk_reference: "{{ _disk_reference | default([]) + [loop_disk] }}"
+    _disk_reference: "{{ _disk_reference  + [loop_disk] }}"
   vars:
     loop_disk:
       reference: "{{ PROJECT_NAME ~ '-' ~ domain.name ~ '-' ~ disk.name }}"
@@ -59,5 +63,5 @@
 
 - name: Append local vars to export lists
   ansible.builtin.set_fact:
-    INTERFACE_REFERENCE: "{{ INTERFACE_REFERENCE | default([]) + _interface_reference }}"
-    DISK_REFERENCE: "{{ DISK_REFERENCE | default([]) + _disk_reference }}"
+    INTERFACE_REFERENCE: "{{ INTERFACE_REFERENCE + _interface_reference }}"
+    DISK_REFERENCE: "{{ DISK_REFERENCE + _disk_reference }}"

@@ -1,0 +1,17 @@
+# ./role/molecule_handler/tasks/devices/_process_disks.yaml
+- name: Get grouped data
+  ansible.builtin.set_fact:
+    grouped_data: "{{ DISK_REFERENCE | groupby('target_domain') | list }}"
+
+- name: Refresh storage pool
+  nsys.libvirt.refresh_resources:
+    resource: storage_pool
+    name: "{{ POOL_NAME }}"
+
+- name: Process disk attachments
+  nsys.libvirt.attach_volume:
+    pool: "{{ POOL_NAME }}"
+    volumes: "{{ item.1 | map(attribute='reference') | list }}"
+    name: "{{item.0}}"
+  loop: "{{ DISK_REFERENCE | groupby('target_domain') | list }}"
+

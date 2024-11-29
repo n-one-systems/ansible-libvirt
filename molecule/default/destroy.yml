@@ -4,21 +4,24 @@
   connection: local
   gather_facts: false
   # no_log: "{{ molecule_no_log }}"
-  tasks:
-    # Developer must implement.
+  roles:
+  - role: nsys.libvirt.molecule_handler
+    vars:
+      molecule_action: destroy
+  # Developer must implement.
 
     # Mandatory configuration for Molecule to function.
 
-    - name: Populate instance config
-      ansible.builtin.set_fact:
-        instance_conf: {}
-
-    - name: Dump instance config
-      ansible.builtin.copy:
-        content: |
-          # Molecule managed
-
-          {{ instance_conf | to_json | from_json | to_yaml }}
-        dest: "{{ molecule_instance_config }}"
-        mode: "0600"
-      when: server.changed | default(false) | bool  # noqa no-handler
+#    - name: Populate instance config
+#      ansible.builtin.set_fact:
+#        instance_conf: {}
+#
+#    - name: Dump instance config
+#      ansible.builtin.copy:
+#        content: |
+#          # Molecule managed
+#
+#          {{ instance_conf | to_json | from_json | to_yaml }}
+#        dest: "{{ molecule_instance_config }}"
+#        mode: "0600"
+#      when: server.changed | default(false) | bool  # noqa no-handler

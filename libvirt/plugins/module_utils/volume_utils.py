@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import fnmatch
 import xml.etree.ElementTree as ElementTree
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple
 
 try:
     import libvirt
@@ -204,3 +204,41 @@ class VolumeUtils:
             return pool_name, volume_name
         except ValueError:
             raise ValueError("Volume path must be in format 'pool_name/volume_name'")
+
+
+    def refresh_storage_pool(self, pool_name: str = None) -> tuple[bool, str]:
+        """
+        Refresh storage pool to ensure up-to-date content information
+
+        Args:
+            pool_name: Optional name of specific pool to refresh
+
+        Returns:
+            tuple: (success, message)
+        """
+        try:
+            if pool_name:
+                pools = [self.conn.storagePoolLookupByName(pool_name)]
+            else:
+                pools = [self.conn.storagePoolLookupByName(name)
+                         for name in self.conn.listStoragePools()]
+
+            refreshed = []
+            failed = []
+
+            for pool in pools:
+                try:
+                    if pool.isActive():
+                        pool.refresh(0)
+                        refreshed.append(pool.name())
+                except libvirt.libvirtError as e:
+                    failed.append((pool.name(), str(e)))
+
+            if failed:
+                failures = '; '.join([f"{name}: {error}" for name, error in failed])
+                return False, f"Failed to refresh storage pools: {failures}"
+
+            return True, f"Successfully refreshed storage pools: {', '.join(refreshed)}"
+
+        except libvirt.libvirtError as e:
+            return False, str(e)

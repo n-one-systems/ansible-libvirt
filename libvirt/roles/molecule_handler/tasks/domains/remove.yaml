@@ -1,0 +1,8 @@
+# ./role/molecule_handler/tasks/domains/remove.yaml
+
+- name: Remove virtual machines
+  nsys.libvirt.domain:
+    name: "{{ item.name }}"
+    state: absent
+    uri: "{{ URI }}"
+  loop: "{{ DOMAIN_SPECS }}"

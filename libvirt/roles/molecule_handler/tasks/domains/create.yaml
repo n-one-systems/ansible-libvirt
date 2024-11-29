@@ -1,0 +1,10 @@
+# ./role/molecule_handler/tasks/domains/create.yaml
+
+- name: Create virtual machines
+  nsys.libvirt.domain:
+    name: "{{ item.name }}"
+    state: present
+    memory: "{{ item.memory }}"
+    vcpu: "{{ item.cpu }}"
+    uri: "{{ URI }}"
+  loop: "{{ DOMAIN_SPECS }}"

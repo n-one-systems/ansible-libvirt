@@ -4,13 +4,13 @@
 # RETURNS:
 #   DOMAIN_SPECS        - spec of Domains to create/modify
 
-- name: Extract Domain entries
+- name: Initialize Domain list
   set_fact:
-    _transformed_domains: "{{ yaml_content | selectattr('type', 'equalto', 'vm') | list }}"
+    _domain_as_dict: []
 
 - name: Transform Domain information
   ansible.builtin.set_fact:
-    _domain_as_dict: "{{ _domain_as_dict | default([])+ [_transformed_domain] }}"
+    _domain_as_dict: "{{ _domain_as_dict + [_transformed_domain] }}"
   vars:
     _transformed_domain:
       name: "{{ _domain.name }}"
@@ -19,13 +19,13 @@
       memory: "{{ _domain.memory }}"
       power_state: "{{ _domain.power_state | default('running') }}"
       cloud_init: "{{ _domain.cloud_init | default(true) }}"
-  loop: "{{ _transformed_domains }}"
+  loop: "{{ _vm_specs }}"
   loop_control:
     loop_var: _domain
 
 - name: Assign domain information
   set_fact:
-    DOMAIN_SPECS: "{{ _domain_as_dict | default([]) }}"
+    DOMAIN_SPECS: "{{ _domain_as_dict }}"
 
 - name: DEBUG - Rendered dict for Domains
   ansible.builtin.debug:

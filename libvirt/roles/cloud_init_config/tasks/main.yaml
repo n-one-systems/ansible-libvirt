@@ -32,10 +32,6 @@
     state: directory
     mode: '0755'
 
-- name: debug
-  ansible.builtin.debug:
-    msg: "{{ DOMAIN_SPECS }}"
-
 - name: Process each VM specification
   ansible.builtin.include_tasks: _process_vm.yaml
   loop: "{{ DOMAIN_SPECS }}"
