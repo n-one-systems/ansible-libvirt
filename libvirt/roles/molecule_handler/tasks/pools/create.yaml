@@ -1,3 +1,4 @@
+# ./role/molecule_handler/tasks/pools/create.yaml
 - name: Create a directory storage pool
   nsys.libvirt.storage_pool:
     name: "{{ POOL_NAME }}"

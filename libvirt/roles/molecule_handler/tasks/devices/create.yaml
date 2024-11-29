@@ -1,7 +1,4 @@
-# ./roles/devices/tasks/main.yaml
-# nsys-ai-claude-3.5
-
-
+# ./role/molecule_handler/tasks/disks/create.yaml
 - name: Process disks
   when: DISK_REFERENCE | length > 0
   ansible.builtin.include_tasks: _process_disks.yaml

@@ -1,3 +1,4 @@
+# ./role/molecule_handler/tasks/pools/remove.yaml
 - name: Destroy storage pool
   nsys.libvirt.storage_pool:
     name: "{{ POOL_NAME }}"

@@ -1,6 +1,4 @@
-# ./roles/devices/tasks/_process_disks.yaml
-# nsys-ai-claude-3.5
-
+# ./role/molecule_handler/tasks/devices/_process_disks.yaml
 - name: Get grouped data
   ansible.builtin.set_fact:
     grouped_data: "{{ DISK_REFERENCE | groupby('target_domain') | list }}"

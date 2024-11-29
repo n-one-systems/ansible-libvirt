@@ -1,3 +1,4 @@
+# ./role/molecule_handler/tasks/disks/remove.yaml
     - name: Remove volume for disks
       nsys.libvirt.libvirt_volume:
         name: "{{ disk.name }}"

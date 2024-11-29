@@ -1,3 +1,4 @@
+# ./role/molecule_handler/tasks/clones/remove.yaml
 - name: Remove virtual machines
   nsys.libvirt.domain:
     name: "{{ item.name }}"

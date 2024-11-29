@@ -1,6 +1,4 @@
-# ./roles/devices/tasks/_process_interfaces.yaml
-# nsys-ai-claude-3.5
-
+# ./role/molecule_handler/tasks/devices/_process_interfaces.yaml
 - name: Refresh Networks
   nsys.libvirt.refresh_resources:
     resource: network
