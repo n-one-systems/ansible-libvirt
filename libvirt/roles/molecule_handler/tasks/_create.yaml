@@ -26,10 +26,10 @@
   ansible.builtin.include_tasks: "disks/create.yaml"
   when: DISK_SPECS is defined and DISK_SPECS | length > 0
 
-#- name: Create cloud-init config for VMs to be provisioned
-#  ansible.builtin.include_role:
-#    name: nsys.libvirt.cloud_init_config
-#  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
+- name: Create cloud-init config for VMs to be provisioned
+  ansible.builtin.include_role:
+    name: nsys.libvirt.cloud_init_config
+  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
 
 - name: Attache devices to domains
   ansible.builtin.include_tasks: "devices/create.yaml"
