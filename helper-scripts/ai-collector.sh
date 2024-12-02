@@ -12,7 +12,7 @@
 set -euo pipefail
 
 # Define source and target directories
-SOURCE_DIR="."
+SOURCE_DIR="./libvirt"
 TARGET_DIR="./target-ai-working-dir"
 
 
