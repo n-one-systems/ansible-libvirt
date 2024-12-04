@@ -1,4 +1,4 @@
-# ./plugins/lookup/libvirt_vms.py
+# ./plugins/lookup/domain/libvirt_vms.py
 #!/usr/bin/python
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type

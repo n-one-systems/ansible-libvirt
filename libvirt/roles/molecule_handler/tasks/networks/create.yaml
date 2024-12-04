@@ -1,6 +1,6 @@
 # ./role/molecule_handler/tasks/networks/create.yaml
 - name: Create NAT network
-  nsys.libvirt.network:
+  nsys.libvirt.network.network:
     name: "{{ network.name }}"
     cidr: "{{ network.cidr }}"
     type: "{{ network.forwarding | default(omit) }}"

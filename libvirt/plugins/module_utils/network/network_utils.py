@@ -1,4 +1,4 @@
-# ./plugins/module_utils/network_utils.py
+# ./plugins/module_utils/network/network_utils.py
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)

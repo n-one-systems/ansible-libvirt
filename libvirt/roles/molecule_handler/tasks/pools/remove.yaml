@@ -1,6 +1,6 @@
 # ./role/molecule_handler/tasks/pools/remove.yaml
 - name: Destroy storage pool
-  nsys.libvirt.storage_pool:
+  nsys.libvirt.storage.storage_pool:
     name: "{{ POOL_NAME }}"
     state: absent   # Will stop and undefine the pool
     uri: "{{ URI }}"

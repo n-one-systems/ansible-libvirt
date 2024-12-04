@@ -1,4 +1,4 @@
-# ./plugins/module_utils/domain_utils.py
+# ./plugins/module_utils/domain/domain_utils.py
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)

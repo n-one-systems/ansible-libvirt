@@ -59,7 +59,7 @@
 
 - name: Set pool directory
   ansible.builtin.set_fact:
-    POOL_DIR: "{{ _global_specs.storage_pool_base_dir | default(storage_pool_base_dir) ~ '/' ~ POOL_NAME  }}"
+    POOL_DIR: "{{ _global_specs.storage_pool_base_dir | default(storage_pool_base_dir) + POOL_NAME  }}"
 
 - name: DEBUG-  Storage/Disk Data
   ansible.builtin.debug:

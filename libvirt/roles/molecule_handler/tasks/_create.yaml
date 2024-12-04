@@ -41,7 +41,7 @@
 
 
 - name: Start VMs
-  nsys.libvirt.domain_power_state:
+  nsys.libvirt.domain.power_state:
     name: "{{ item.name }}"
     state: "{{ item.power_state | default('running') }}"
   loop: "{{ DOMAIN_SPECS }}"

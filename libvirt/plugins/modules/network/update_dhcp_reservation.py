@@ -1,5 +1,4 @@
-# ./plugins/modules/update_dhcp_reservation.py
-# nsys-ai-claude-3.5
+# ./plugins/modules/network/update_dhcp_reservation.py
 
 from __future__ import (absolute_import, division, print_function)
 __metaclass__ = type
@@ -55,7 +54,7 @@ DOCUMENTATION = r"""
         - If IP is provided in CIDR notation, only the IP portion is used
     requirements:
         - "python >= 3.12"
-        - "libvirt-python >= 5.6.0"
+        - "libvirt-python >= 10.9.0"
 """
 
 EXAMPLES = r"""
@@ -130,7 +129,7 @@ except ImportError:
     HAS_LIBVIRT = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
 
 
 class DHCPReservationManager:

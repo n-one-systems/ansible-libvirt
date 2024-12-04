@@ -1,4 +1,4 @@
-# ./plugins/lookup/domain_info.py
+# ./plugins/lookup/domain/info.py
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)
@@ -49,7 +49,7 @@ DOCUMENTATION = r"""
         - Returns empty dict/list when domain not found
     requirements:
         - "python >= 3.12"
-        - "libvirt-python >= 5.6.0"
+        - "libvirt-python >= 10.9.0"
 """
 
 EXAMPLES = r"""

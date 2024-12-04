@@ -1,4 +1,4 @@
-# ./plugins/modules/clone_domain.py
+# ./plugins/modules/domain/clone_domain.py
 # nsys-ai-claude-3.5
 
 from __future__ import absolute_import, division, print_function
@@ -61,7 +61,7 @@ options:
     no_log: true
 requirements:
   - "python >= 3.12"
-  - "libvirt-python >= 5.6.0"
+  - "libvirt-python >= 10.9.0"
 author:
   - "N-One Systems AI (@n-one-systems)"
 '''
@@ -131,9 +131,9 @@ except ImportError:
     HAS_LIBVIRT = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.volume_utils import VolumeUtils
-from ansible_collections.nsys.libvirt.plugins.module_utils.domain_utils import DomainUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.storage.volume_utils import VolumeUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.domain.domain_utils import DomainUtils
 
 def generate_mac_address():
     """Generate a random MAC address in KVM format"""

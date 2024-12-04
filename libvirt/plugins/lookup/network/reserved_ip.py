@@ -1,4 +1,4 @@
-# ./plugins/lookup/reserved_ip.py
+# ./plugins/lookup/network/reserved_ip.py
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)
@@ -38,7 +38,7 @@ DOCUMENTATION = r"""
         - Requires libvirt-python to be installed on the control node
     requirements:
         - "python >= 3.12"
-        - "libvirt-python >= 5.6.0"
+        - "libvirt-python >= 10.9.0"
 """
 
 EXAMPLES = r"""

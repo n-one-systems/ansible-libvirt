@@ -1,4 +1,4 @@
-# ./plugins/module_utils/libvirt_connection.py
+# ./plugins/module_utils/common/libvirt_connection.py
 # nsys-ai-claude-3.5
 
 # NOTE

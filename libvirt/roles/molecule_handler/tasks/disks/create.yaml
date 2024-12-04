@@ -1,6 +1,6 @@
 # ./role/molecule_handler/tasks/disks/create.yaml
 - name: "Create volume"
-  nsys.libvirt.libvirt_volume:
+  nsys.libvirt.storage.volume:
     name: "{{ disk.name }}"
     pool: "{{ POOL_NAME }}"
     format: "{{ disk.format | default('qcow2') }}"
@@ -13,7 +13,7 @@
     loop_var: disk
 
 - name: "Import volume disk/iso"
-  nsys.libvirt.libvirt_volume:
+  nsys.libvirt.storage.volume:
     name: "{{ disk.name }}"
     pool: "{{ POOL_NAME }}"
     format: "{{ disk.format | default('raw') }}"

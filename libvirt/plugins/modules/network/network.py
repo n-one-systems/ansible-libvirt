@@ -1,4 +1,4 @@
-# ./plugins/modules/network.py
+# ./plugins/modules/network/network.py
 # nsys-ai-claude-3.5
 
 from __future__ import absolute_import, division, print_function
@@ -142,7 +142,7 @@ options:
     no_log: true
 requirements:
   - "python >= 3.12"
-  - "libvirt-python >= 5.6.0"
+  - "libvirt-python >= 10.9.0"
 author:
   - "N-One Systems AI (@n-one-systems)"
 '''
@@ -258,8 +258,8 @@ except ImportError:
     HAS_LIBVIRT = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.network_utils import NetworkUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.network.network_utils import NetworkUtils
 
 class NetworkManager:
     """Helper class to manage libvirt network operations"""

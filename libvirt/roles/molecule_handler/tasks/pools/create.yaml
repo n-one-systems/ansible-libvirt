@@ -1,13 +1,7 @@
-# ./role/molecule_handler/tasks/pools/create.yaml
-- name: Ensure tha storage pool directory exists
-  ansible.builtin.file:
-    path: "{{ POOL_DIR }}"
-    state: directory
-    mode: '0755'
-    recurse: yes
+# ./roles/molecule_handler/tasks/pools/create.yaml
 
 - name: Create a directory storage pool
-  nsys.libvirt.storage_pool:
+  nsys.libvirt.storage.storage_pool:
     name: "{{ POOL_NAME }}"
     pool_type: dir  # Must specify type when creating
     target_path: "{{ POOL_DIR }}"

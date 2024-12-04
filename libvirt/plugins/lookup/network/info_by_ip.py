@@ -1,7 +1,7 @@
-# ./plugins/lookup/network_info.py
+# ./plugins/lookup/network/info_by_ip.py
 # nsys-ai-claude-3.5
 
-# !/usr/bin/python
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, division, print_function
@@ -9,19 +9,17 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 DOCUMENTATION = r"""
-    name: network_info
+    name: network_info_by_ip
     author: n!-systems (claude sonnet 3.5) <ai-working-group@none.systems>
     version_added: "1.0.0"
-    short_description: Retrieve information about libvirt networks
+    short_description: Retrieve information about libvirt networks by CIDR
     description:
-        - This lookup returns information about libvirt networks
-        - Can return single network info or multiple networks based on pattern matching
-        - Returns empty list if no networks are found
+        - This lookup returns information about libvirt networks based on their CIDR
+        - Returns network configuration details including bridge, IP, and DHCP settings
+        - Returns an empty list if no matching network is found
     options:
         _terms:
-            description: 
-                - Name of the network to look up
-                - Supports wildcards/regex patterns to match multiple networks
+            description: CIDR of the network (e.g., '172.21.0.0/24')
             required: True
         wantlist:
             description: Force return of list even if single entry
@@ -32,7 +30,7 @@ DOCUMENTATION = r"""
             type: str
             default: qemu:///system
             ini:
-                - section: network_info_lookup
+                - section: network_info_by_ip_lookup
                   key: uri
         remote_host:
             description: Remote host to connect to
@@ -47,33 +45,23 @@ DOCUMENTATION = r"""
             type: str
             required: false
             no_log: true
-        fail_on_missing:
-            description: Whether to fail if network is not found
-            type: bool
-            default: False
     notes:
         - Requires libvirt-python to be installed on the control node
-        - Returns empty list when no networks are found (unless fail_on_missing=True)
     requirements:
         - "python >= 3.12"
-        - "libvirt-python >= 5.6.0"
+        - "libvirt-python >= 10.9.0"
 """
 
 EXAMPLES = r"""
-# Get info for specific network by name
+# Get info for specific network by CIDR
 - name: Get network info
   debug:
-    msg: "{{ lookup('network_info', 'default') }}"
-
-# Get info as list
-- name: Get network info as list
-  debug:
-    msg: "{{ lookup('network_info', 'default', wantlist=True) }}"
+    msg: "{{ lookup('network_info_by_ip', '172.21.0.0/24') }}"
 
 # Get info for network on remote host
 - name: Get network info from remote host
   debug:
-    msg: "{{ lookup('network_info', 'default', 
+    msg: "{{ lookup('network_info_by_ip', '172.21.0.0/24', 
              remote_host='libvirt1.example.com', 
              auth_user='admin', 
              auth_password='secret') }}"
@@ -81,7 +69,7 @@ EXAMPLES = r"""
 # Handle case when network is not found
 - name: Get network info (handles not found case)
   debug:
-    msg: "{{ lookup('network_info', 'nonexistent_network') | default('Network not found') }}"
+    msg: "{{ lookup('network_info_by_ip', '192.168.0.0/16') | default('Network not found') }}"
 """
 
 RETURN = r"""
@@ -120,7 +108,6 @@ _raw:
 
 try:
     import libvirt
-
     HAS_LIBVIRT = True
 except ImportError:
     HAS_LIBVIRT = False
@@ -138,7 +125,7 @@ class LookupModule(LookupBase):
 
     def run(self, terms, variables=None, **kwargs):
         if not HAS_LIBVIRT:
-            raise AnsibleError("libvirt-python is required for network_info lookup")
+            raise AnsibleError("libvirt-python is required for network_info_by_ip lookup")
 
         # Process options
         self.set_options(var_options=variables, direct=kwargs)
@@ -154,6 +141,8 @@ class LookupModule(LookupBase):
             remote_host=self.get_option('remote_host')
         )
 
+        ret = []
+
         # Establish connection
         success, conn = libvirt_conn.connect()
         if not success:
@@ -161,20 +150,19 @@ class LookupModule(LookupBase):
 
         try:
             network_utils = NetworkUtils(conn)
-            ret = []
 
             for term in terms:
-                networks = network_utils.get_networks_by_pattern(term)
+                network = network_utils.get_network_by_cidr(term)
+                if network:
+                    ret.append(network)
+                else:
+                    display.vvv(f"No network found with CIDR: {term}")
+                    ret.append({})
 
-                if not networks and self.get_option('fail_on_missing'):
-                    raise AnsibleError(f"No networks found matching pattern: {term}")
-
-                ret.extend(networks)
-
-            display.vvv(f"Network info lookup result: {ret}")
+            display.vvv(f"Network info by IP lookup result: {ret}")
             return ret
 
         except Exception as e:
-            raise AnsibleError(f"Error in network_info lookup: {str(e)}")
+            raise AnsibleError(f"Error in network_info_by_ip lookup: {str(e)}")
         finally:
             libvirt_conn.close()

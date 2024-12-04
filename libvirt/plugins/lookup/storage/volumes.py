@@ -1,4 +1,4 @@
-# ./plugins/lookup/volumes.py
+# ./plugins/lookup/storage/volumes.py
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)

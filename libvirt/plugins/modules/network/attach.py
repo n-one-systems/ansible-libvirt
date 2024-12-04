@@ -1,4 +1,4 @@
-# ./plugins/modules/attach_network.py
+# ./plugins/modules/network/attachpy
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)
@@ -64,7 +64,7 @@ DOCUMENTATION = r"""
 
     requirements:
         - "python >= 3.12"
-        - "libvirt-python >= 5.6.0"
+        - "libvirt-python >= 10.9.0"
 """
 
 EXAMPLES = r"""
@@ -128,7 +128,7 @@ RETURN = r"""
 import re
 import xml.etree.ElementTree as ElementTree
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
 
 try:
     import libvirt

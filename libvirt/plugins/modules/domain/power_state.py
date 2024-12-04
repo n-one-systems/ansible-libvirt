@@ -1,4 +1,4 @@
-# ./plugins/modules/domain_power_state.py
+# ./plugins/modules/domain/power_state.py
 # nsys-ai-claude-3.5
 
 from __future__ import absolute_import, division, print_function
@@ -31,7 +31,7 @@ options:
         default: qemu:///system
 requirements:
     - "python >= 3.12"
-    - "libvirt-python >= 5.6.0"
+    - "libvirt-python >= 10.9.0"
 author:
     - "N-One Systems (AI) (@n-one-systems)"
 '''

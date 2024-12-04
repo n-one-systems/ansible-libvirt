@@ -104,4 +104,6 @@ for ext in "${EXTENSIONS[@]}"; do
     process_directory "$SOURCE_DIR" "$ext"
 done
 
+# remove all file names containing __init__ as they are not needed
+find $TARGET_DIR -name "*__init__*" -exec rm -f {} \;
 echo "File copy process completed!"
