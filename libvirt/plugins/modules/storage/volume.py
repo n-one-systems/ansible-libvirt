@@ -200,6 +200,8 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
 from ansible_collections.nsys.libvirt.plugins.module_utils.storage.volume_utils import VolumeUtils
 from ansible_collections.nsys.libvirt.plugins.module_utils.storage.pool_utils import StoragePoolUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.permission_manager import PermissionManager
+
 
 def parse_size(size_str):
     """Convert size string (like '5G', '1024M') to bytes"""
@@ -442,7 +444,7 @@ def main():
     )
 
     if not HAS_LIBVIRT:
-        module.fail_json(msg='The libvirt python module is required for this module')
+        module.fail_json(msg='The libvirt python module is required')
 
     # Initialize connection handler
     libvirt_conn = LibvirtConnection(module)
@@ -461,13 +463,15 @@ def main():
         if not success:
             module.fail_json(msg=f"Failed to connect to libvirt: {conn}")
 
-        # Initialize volume utilities
+        # Initialize utilities
         volume_utils = VolumeUtils(conn)
         pool_utils = StoragePoolUtils(conn)
-        # Resolve owner and group
+        perm_manager = PermissionManager(module)
+
         try:
-            uid = resolve_owner(module.params['owner'])
-            gid = resolve_group(module.params['group'])
+            # Resolve owner and group
+            uid = perm_manager._resolve_owner(module.params['owner'])
+            gid = perm_manager._resolve_group(module.params['group'])
         except ValueError as e:
             module.fail_json(msg=str(e))
 
@@ -497,7 +501,7 @@ def main():
                     if not allocation:
                         allocation = '0'  # Default to thin provisioning
                     changed, message, vol_info = create_volume(
-                        module, volume_utils, pool, name,
+                        module, volume_utils, pool_utils, pool, name,
                         capacity, allocation, format,
                         mode, uid, gid
                     )
@@ -543,7 +547,6 @@ def main():
 
     finally:
         libvirt_conn.close()
-
 
 if __name__ == '__main__':
     main()
