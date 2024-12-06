@@ -1,4 +1,4 @@
-# ./plugins/modules/storage/storage_pool.py
+# ./plugins/modules/storage/pool.py
 # nsys-ai-claude-3.5
 
 from __future__ import (absolute_import, division, print_function)
@@ -7,7 +7,7 @@ __metaclass__ = type
 
 DOCUMENTATION = r'''
 ---
-module: storage_pool
+module: pool
 short_description: Manage libvirt storage pools
 description:
   - Create, delete, start, stop and modify libvirt storage pools
@@ -111,7 +111,7 @@ author:
 EXAMPLES = r'''
 # Create a basic directory-based storage pool
 - name: Create a basic storage pool
-  nsys.libvirt.storage.storage_pool
+  nsys.libvirt.storage.pool
     name: vm-images
     pool_type: dir
     target_path: /var/lib/libvirt/images
@@ -121,25 +121,15 @@ EXAMPLES = r'''
     group: qemu
     autostart: true
 
-# Create a logical volume based storage pool
-- name: Create a LVM storage pool
-  nsys.libvirt.storage.storage_pool
-    name: vg_images
-    pool_type: logical
-    source_path: /dev/sdb
-    source_format: lvm2
-    target_path: /dev/vg_images
-    state: present
-
 # Remove a storage pool
 - name: Remove storage pool
-  nsys.libvirt.storage.storage_pool
+  nsys.libvirt.storage.pool
     name: vm-images
     state: absent
 
 # Ensure pool is active with specific permissions
 - name: Configure active pool with permissions
-  nsys.libvirt.storage.storage_pool
+  nsys.libvirt.storage.pool
     name: vm-images
     state: active
     mode: '0755'
@@ -157,7 +147,7 @@ except ImportError:
 
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.storage.storage_pool_utils import StoragePoolUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.storage.pool_utils import StoragePoolUtils
 from ansible_collections.nsys.libvirt.plugins.module_utils.common.permission_manager import PermissionManager
 
 def manage_pool(module: AnsibleModule, pool_utils: StoragePoolUtils, perm_manager: PermissionManager) -> dict:
@@ -226,7 +216,6 @@ def manage_pool(module: AnsibleModule, pool_utils: StoragePoolUtils, perm_manage
                     'owner': owner,
                     'group': group
                 } if any([mode, owner, group]) else None
-
                 xml = pool_utils.build_pool_xml(
                     name=name,
                     pool_type=pool_type,

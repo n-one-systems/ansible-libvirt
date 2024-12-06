@@ -1,0 +1,8 @@
+# create storage volumes
+  - name: create a volume per pool
+    nsys.libvirt.storage.volume:
+      pool: "{{ item }}"
+      name: volume1
+      capacity: 0.01G
+      format: qcow2
+      state: present

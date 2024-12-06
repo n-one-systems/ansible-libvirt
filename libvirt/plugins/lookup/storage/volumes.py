@@ -115,8 +115,8 @@ except ImportError:
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.volume_utils import VolumeUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.storage.volume_utils import VolumeUtils
 
 display = Display()
 

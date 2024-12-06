@@ -199,7 +199,7 @@ except ImportError:
 from ansible.module_utils.basic import AnsibleModule
 from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
 from ansible_collections.nsys.libvirt.plugins.module_utils.storage.volume_utils import VolumeUtils
-
+from ansible_collections.nsys.libvirt.plugins.module_utils.storage.pool_utils import StoragePoolUtils
 
 def parse_size(size_str):
     """Convert size string (like '5G', '1024M') to bytes"""
@@ -300,7 +300,7 @@ def get_volume_xml(name, capacity, allocation, format):
     return volume_xml
 
 
-def create_volume(module, volume_utils, pool_name, vol_name, capacity, allocation, format,
+def create_volume(module, volume_utils, pool_utils, pool_name, vol_name, capacity, allocation, format,
                   mode, owner, group):
     """Create a new volume with permissions"""
     if volume_utils.volume_exists(pool_name, vol_name):
@@ -308,12 +308,20 @@ def create_volume(module, volume_utils, pool_name, vol_name, capacity, allocatio
 
     try:
         pool = volume_utils.conn.storagePoolLookupByName(pool_name)
+
+        # Activate pool if needed using pool utilities
+        try:
+            changed, msg = pool_utils.manage_pool_state(pool, "active", True)
+            if not changed and not pool.isActive():
+                module.fail_json(msg=f"Failed to activate storage pool '{pool_name}': {msg}")
+        except Exception as e:
+            module.fail_json(msg=f"Error activating pool: {str(e)}")
+
         xml = get_volume_xml(vol_name, capacity, allocation, format)
         vol = pool.createXML(xml, 0)
         if vol is None:
             module.fail_json(msg="Failed to create the storage volume")
 
-        # Set permissions on the new volume
         perm_changed = manage_volume_permissions(
             module, vol.path(), mode, owner, group
         )
@@ -455,7 +463,7 @@ def main():
 
         # Initialize volume utilities
         volume_utils = VolumeUtils(conn)
-
+        pool_utils = StoragePoolUtils(conn)
         # Resolve owner and group
         try:
             uid = resolve_owner(module.params['owner'])

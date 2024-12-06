@@ -4,7 +4,6 @@
   ansible.builtin.include_role:
     name: nsys.libvirt.molecule_transformer
   vars:
-    project_name: "{{ lookup('ansible.builtin.password', '/dev/null', seed=project_base_dir, chars=['ascii_lowercase','digits'], length=5 ) }}"
     state: present
 
 - name: Setup libvirt networks
@@ -26,19 +25,17 @@
   ansible.builtin.include_tasks: "disks/create.yaml"
   when: DISK_SPECS is defined and DISK_SPECS | length > 0
 
-- name: Create cloud-init config for VMs to be provisioned
-  ansible.builtin.include_role:
-    name: nsys.libvirt.cloud_init_config
-  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
+
+
+#- name: Create cloud-init config for VMs to be provisioned
+#  ansible.builtin.include_role:
+#    name: nsys.libvirt.cloud_init_config
+#  when: DOMAIN_SPECS is defined and DOMAIN_SPECS | length > 0
+# will be moved to seperate collection
+
 
 - name: Attache devices to domains
   ansible.builtin.include_tasks: "devices/create.yaml"
-
-# fail here
-- name: fail here
-  ansible.builtin.fail:
-    msg: "This is a fail task"
-
 
 - name: Start VMs
   nsys.libvirt.domain.power_state:

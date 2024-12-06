@@ -4,10 +4,10 @@
   - name: Assert that the required variables are defined
     assert:
       that:
-        - project_name is defined
+        - PROJECT_NAME is defined
         - state is defined
         - state in ['present', 'absent']
-        - project_base_dir is defined
+        - PROJECT_BASE_DIR is defined
       quiet: true
   - name: Extract Domain/Clone/Network/Disk Specs for processing
     set_fact:
@@ -51,35 +51,14 @@
       - "{{ __disk_names }}"
       - "{{ __clone_names }}"
 
-- name: Assert block for cloud-init packages
-  when: (_vm_specs | selectattr('cloud_init', 'defined') | selectattr('cloud_init' ) | list | length) > 0
-  # we run this check only if we create vms that use cloud-init
-  block:
-  - name: Check if genisoimage is installed
-    ansible.builtin.shell: command -v genisoimage
-    register: genisoimage_check
-    failed_when: genisoimage_check.rc != 0
-    changed_when: false
-
-  - name: Check if cloud_localds is installed
-    ansible.builtin.shell: command -v cloud-localds
-    register: cloud_localds_check
-    failed_when: cloud_localds_check.rc != 0
-    changed_when: false
-
-  - name: Assert that both required packages are installed
-    ansible.builtin.assert:
-      that:
-        - genisoimage_check.rc == 0
-        - cloud_localds_check.rc == 0
-      fail_msg: "Required packages (genisoimage and cloud-localds) are not installed"
-      quiet: true
 
 - name: Set and initialize the project meta vars
   ansible.builtin.set_fact:
-    PROJECT_NAME: "{{ project_name }}"
-    PROJECT_BASE_DIR: "{{ project_base_dir }}"
-    URI: "{{ _global_specs.uri | default('qemu:///system') }}"
+    URI: "{{ _global_specs.uri | default(URI) }}"
+    DEFAULT_USER: "{{ _global_specs.default_user | default(molecule_user) }}"
+    DEFAULT_USER_PASSWORD: "{{ _global_specs.default_user_password | default(molecule_user_password) }}"
+    SSH_PUB_KEY: "{{ _global_specs.ssh_key_path | default(molecule_ssh_private_key) }}"
+    SSH_PRIVATE_KEY: "{{ _global_specs.ssh_key_path | default(molecule_ssh_private_key) }}"
     POOL_NAME: ""
     POOL_DIR: ""
     DISK_SPECS: []
@@ -143,3 +122,8 @@
   - name: Debug - out disk references
     ansible.builtin.debug:
       msg: "{{ DISK_REFERENCE }}"
+  - name: Debug - User Credentials
+    ansible.builtin.debug:
+      msg:
+      - "User: {{ DEFAULT_USER }}"
+      - "Password: {{ DEFAULT_USER_PASSWORD }}"

@@ -1,0 +1,12 @@
+---
+- name: Cleanup storage directories
+  hosts: localhost
+  gather_facts: false
+  tasks:
+  - name: Remove storage pool directories
+    ansible.builtin.file:
+      path: "{{ item }}"
+      state: absent
+    loop:
+    - /var/tmp/pool1
+    - /var/tmp/pool2

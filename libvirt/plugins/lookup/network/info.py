@@ -128,8 +128,8 @@ except ImportError:
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.network_utils import NetworkUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.network.network_utils import NetworkUtils
 
 display = Display()
 

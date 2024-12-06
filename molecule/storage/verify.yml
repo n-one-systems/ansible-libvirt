@@ -1,0 +1,44 @@
+---
+- name: Verify
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Get volumes from pool1
+      nsys.libvirt.storage.volume:
+        name: "{{ item }}"
+        pool: pool1
+        state: present
+      register: pool1_volumes
+      loop:
+        - raw1.img
+        - tinylinux.iso
+
+    - name: Get volumes from pool2
+      nsys.libvirt.storage.volume:
+        name: "{{ item }}"
+        pool: pool2
+        state: present
+      register: pool2_volumes
+      loop:
+        - raw2.img
+        - cirros.img
+
+    - name: Verify VM1 attachments
+      nsys.libvirt.domain.domain:
+        name: vm1
+        state: present
+      register: vm1_info
+
+    - name: Verify VM2 attachments
+      nsys.libvirt.domain.domain:
+        name: vm2
+        state: present
+      register: vm2_info
+
+    - name: Assert storage configuration
+      assert:
+        that:
+          - pool1_volumes.results | length == 2
+          - pool2_volumes.results | length == 2
+          - vm1_info.domain_info.disks | length == 2
+          - vm2_info.domain_info.disks | length == 2

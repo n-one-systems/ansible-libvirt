@@ -1,0 +1,8 @@
+- name: Remove Pools
+  nsys.libvirt.storage.pool:
+    name: pool1
+    state: absent
+  loop:
+    - pool1
+    - pool2
+    - pool3

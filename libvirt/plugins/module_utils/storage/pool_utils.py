@@ -1,18 +1,19 @@
-# ./plugins/module_utils/storage/storage_pool_utils.py
-# nsys-ai-claude-3.5
-
 from __future__ import (absolute_import, division, print_function)
+
 __metaclass__ = type
 
 import fnmatch
+import time
 import xml.etree.ElementTree as ElementTree
 from typing import Dict, List, Optional, Tuple
 
 try:
     import libvirt
-    HAS_LIBVIRT = False
 except ImportError:
+    HAS_LIBVIRT = False
+else:
     HAS_LIBVIRT = True
+
 
 
 class StoragePoolUtils:
@@ -46,18 +47,18 @@ class StoragePoolUtils:
             if target_elem is not None:
                 path_elem = target_elem.find("path")
                 perms_elem = target_elem.find("permissions")
-                
+
                 target_info = {
                     "path": path_elem.text if path_elem is not None else None,
                     "permissions": {}
                 }
-                
+
                 if perms_elem is not None:
                     for perm in ["mode", "owner", "group"]:
                         elem = perms_elem.find(perm)
                         if elem is not None:
                             target_info["permissions"][perm] = elem.text
-                            
+
                 return target_info
         except ElementTree.ParseError:
             pass
@@ -78,22 +79,22 @@ class StoragePoolUtils:
             source_elem = root.find(".//source")
             if source_elem is not None:
                 source_info = {}
-                
+
                 # Extract device info if present
                 device = source_elem.find("device")
                 if device is not None:
                     source_info["device"] = device.get("path")
-                
+
                 # Extract host info if present
                 host = source_elem.find("host")
                 if host is not None:
                     source_info["host"] = host.get("name")
-                    
+
                 # Extract format info if present
                 format_elem = source_elem.find("format")
                 if format_elem is not None:
                     source_info["format"] = format_elem.get("type")
-                    
+
                 return source_info
         except ElementTree.ParseError:
             pass
@@ -145,8 +146,8 @@ class StoragePoolUtils:
         pools = []
         try:
             all_pools = (
-                self.conn.listStoragePools() +
-                self.conn.listDefinedStoragePools()
+                    self.conn.listStoragePools() +
+                    self.conn.listDefinedStoragePools()
             )
             matching_pools = fnmatch.filter(all_pools, pattern)
 
@@ -181,15 +182,18 @@ class StoragePoolUtils:
         """
         return bool(self.get_pool_info(pool_name))
 
-    def manage_pool_state(self, pool: libvirt.virStoragePool, 
-                         desired_state: str, autostart: bool) -> Tuple[bool, str]:
+    def manage_pool_state(self, pool: libvirt.virStoragePool,
+                          desired_state: str, autostart: bool,
+                          max_retries: int = 3, retry_delay: float = 1.0) -> Tuple[bool, str]:
         """
-        Manage pool state (active/inactive) and autostart
+        Manage pool state (active/inactive) and autostart with retry mechanism
 
         Args:
             pool: Storage pool object
             desired_state: Desired state ('active', 'inactive')
             autostart: Whether pool should autostart
+            max_retries: Maximum number of activation attempts
+            retry_delay: Delay between retries in seconds
 
         Returns:
             tuple: (changed, message)
@@ -209,13 +213,31 @@ class StoragePoolUtils:
 
             # Handle activation state
             current_state = "active" if pool.isActive() else "inactive"
-            
+
             if desired_state != current_state:
                 if desired_state == "active" and not pool.isActive():
-                    if not pool.create():
-                        raise libvirt.libvirtError("Failed to activate pool")
-                    changed = True
-                    messages.append("Activated pool")
+                    retry_count = 0
+                    last_error = None
+
+                    while retry_count < max_retries:
+                        try:
+                            if pool.create() == 0:  # Success
+                                changed = True
+                                messages.append("Activated pool")
+                                break
+                            retry_count += 1
+                            if retry_count < max_retries:
+                                time.sleep(retry_delay)
+                        except libvirt.libvirtError as e:
+                            last_error = e
+                            retry_count += 1
+                            if retry_count < max_retries:
+                                time.sleep(retry_delay)
+
+                    if retry_count == max_retries:
+                        error_msg = str(last_error) if last_error else "Failed to activate pool"
+                        raise libvirt.libvirtError(error_msg)
+
                 elif desired_state == "inactive" and pool.isActive():
                     pool.destroy()
                     changed = True
@@ -279,6 +301,7 @@ class StoragePoolUtils:
         xml_declaration = '<?xml version="1.0" encoding="utf-8"?>\n'
         pool_xml = ElementTree.tostring(pool, encoding='unicode', method='xml')
         return xml_declaration + pool_xml
+
     def refresh_pool(self, pool_name: str = None) -> Tuple[bool, str]:
         """
         Refresh storage pool to ensure up-to-date content information
@@ -293,8 +316,8 @@ class StoragePoolUtils:
             if pool_name:
                 pools = [self.conn.storagePoolLookupByName(pool_name)]
             else:
-                pools = [self.conn.storagePoolLookupByName(name) 
-                        for name in self.conn.listStoragePools()]
+                pools = [self.conn.storagePoolLookupByName(name)
+                         for name in self.conn.listStoragePools()]
 
             refreshed = []
             failed = []

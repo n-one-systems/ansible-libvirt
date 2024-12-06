@@ -9,7 +9,12 @@ provisioner:
   name: ansible
   config_options:
     libvirt_defaults: {}
-      # the below values are here to show the defaults that get set
+      # NOTE: the below values are here to show the defaults that get set
+      # molecule_user: "molecule"
+      # molecule_user_password: "molecule"
+      # molecule_ssh_pub_key: "~/.ssh/id_rsa.pub"
+      # molecule_ssh_private_key: "~/.ssh/id_rsa"
+      #
       # storage_pool_base_dir: "/var/tmp/"
       # uri: qemu:///system
       # oob_network:

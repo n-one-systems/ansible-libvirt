@@ -56,22 +56,22 @@ EXAMPLES = r"""
 # Get info for specific domain
 - name: Get domain info
   debug:
-    msg: "{{ lookup('domain_info', 'my-vm') }}"
+    msg: "{{ lookup('domain.info', 'my-vm') }}"
 
 # Get info for specific domain as list
 - name: Get domain info as list
   debug:
-    msg: "{{ lookup('domain_info', 'my-vm', wantlist=True) }}"
+    msg: "{{ lookup('domain.info', 'my-vm', wantlist=True) }}"
 
 # Get info for all domains
 - name: Get all domains
   debug:
-    msg: "{{ lookup('domain_info', '*') }}"
+    msg: "{{ lookup('domain.info', '*') }}"
 
 # Get info for domain on remote host
 - name: Get domain info from remote host
   debug:
-    msg: "{{ lookup('domain_info', 'my-vm', 
+    msg: "{{ lookup('domain.info', 'my-vm', 
              remote_host='libvirt1.example.com', 
              auth_user='admin', 
              auth_password='secret') }}"
@@ -137,8 +137,8 @@ except ImportError:
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.domain_utils import DomainUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.domain.domain_utils import DomainUtils
 
 display = Display()
 

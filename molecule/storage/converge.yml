@@ -1,0 +1,20 @@
+---
+- name: Converge
+  hosts: localhost
+  vars:
+    MOLECULE_FILES_DIR: "{{ playbook_dir }}/../molecule/default/files"
+    MOLECULE_TEST_BASE_DIR: "/tmp/molecule"
+  gather_facts: false
+  tasks:
+  - name: include pool creations
+    ansible.builtin.include_tasks: pools/create.yaml
+
+  - name: include volumen import/creations
+    ansible.builtin.include_tasks: volumes/create.yaml
+    loop:
+    - pool1
+    - pool2
+    - pool3
+
+  - name: include pool creations
+    ansible.builtin.include_tasks: pools/create.yaml

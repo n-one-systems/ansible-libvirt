@@ -70,8 +70,8 @@ except ImportError:
     HAS_LIBVIRT = False
 
 from ansible.module_utils.basic import AnsibleModule
-from ansible_collections.nsys.libvirt.plugins.module_utils.libvirt_connection import LibvirtConnection
-from ansible_collections.nsys.libvirt.plugins.module_utils.domain_utils import DomainUtils
+from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connection import LibvirtConnection
+from ansible_collections.nsys.libvirt.plugins.module_utils.domain.domain_utils import DomainUtils
 
 def main():
     module = AnsibleModule(

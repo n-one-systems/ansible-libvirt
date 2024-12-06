@@ -1,13 +1,6 @@
 # ./plugins/module_utils/common/libvirt_connection.py
 # nsys-ai-claude-3.5
 
-# NOTE
-#
-# not yet used
-#
-# NOTE
-
-
 import libvirt
 from ansible.module_utils.basic import AnsibleModule
 from typing import Optional, Tuple, Union
@@ -139,7 +132,10 @@ class LibvirtConnection:
         """Close the libvirt connection if active"""
         if self.conn:
             try:
-                self.conn.close()
-            except:
-                pass
-            self.conn = None
+                ret = self.conn.close()
+                if ret < 0:
+                    self.module.warn(f"Error closing libvirt connection: {ret}")
+            except libvirt.libvirtError as e:
+                self.module.warn(f"Error closing libvirt connection: {str(e)}")
+            finally:
+                self.conn = None

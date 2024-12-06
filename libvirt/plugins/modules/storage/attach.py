@@ -1,4 +1,5 @@
 # ./plugins/modules/storage/attach.py
+# nsys-ai-claude-3.5
 
 from __future__ import absolute_import, division, print_function
 
@@ -15,6 +16,7 @@ description:
   - Smart handling of multiple volumes with appropriate bus selection
   - Works with both running and inactive domains
   - Uses libvirt storage pool abstraction for volume management
+  - Prevents duplicate attachments of the same volume
 options:
   name:
     description:
@@ -33,84 +35,15 @@ options:
     required: true
     type: str
   uri:
-    description:
+    description: 
       - libvirt connection uri
     type: str
     default: 'qemu:///system'
-  remote_host:
-    description:
-      - Remote host to connect to
-    type: str
-    required: false
-  auth_user:
-    description:
-      - Username for authentication if required
-    type: str
-    required: false
-  auth_password:
-    description:
-      - Password for authentication if required
-    type: str
-    required: false
-    no_log: true
 requirements:
   - "python >= 3.12"
   - "libvirt-python >= 10.9.0"
 author:
   - "N-One Systems AI (@n-one-systems)"
-'''
-
-EXAMPLES = r'''
-- name: Attach a single volume to running or stopped domain
-  nsys.libvirt.storage.attach_volume:
-    name: my_vm
-    volumes: 
-      - my_data_volume
-    pool: default
-
-- name: Attach multiple volumes including ISOs
-  nsys.libvirt.storage.attach_volume:
-    name: my_vm
-    volumes:
-      - data_vol1
-      - installer1.iso
-      - installer2.iso 
-    pool: default
-'''
-
-RETURN = r'''
-changed:
-    description: Whether any changes were made
-    type: bool
-    returned: always
-attached_volumes:
-    description: Information about attached volumes
-    type: list
-    returned: success
-    contains:
-        name:
-            description: Volume name
-            type: str
-        type:
-            description: How volume was attached (disk/cdrom)
-            type: str
-        target:
-            description: Target device name in guest
-            type: str
-        bus:
-            description: Bus type used for attachment
-            type: str
-        persistent:
-            description: Whether attachment is persistent
-            type: bool
-domain_state:
-    description: State of the domain (running/shutoff)
-    type: str
-    returned: always
-msg:
-    description: Status message
-    type: str
-    returned: always
 '''
 
 import os
@@ -119,6 +52,7 @@ import xml.etree.ElementTree as ET
 
 try:
     import libvirt
+
     HAS_LIBVIRT = True
 except ImportError:
     HAS_LIBVIRT = False
@@ -128,24 +62,30 @@ from ansible_collections.nsys.libvirt.plugins.module_utils.common.libvirt_connec
 from ansible_collections.nsys.libvirt.plugins.module_utils.storage.volume_utils import VolumeUtils
 from ansible_collections.nsys.libvirt.plugins.module_utils.domain.domain_utils import DomainUtils
 
+
+def is_volume_attached(domain_xml: str, volume_path: str) -> bool:
+    """Check if volume is already attached to domain"""
+    root = ET.fromstring(domain_xml)
+    for disk in root.findall(".//disk"):
+        source = disk.find("source")
+        if source is not None:
+            if source.get('file') == volume_path or source.get('volume') == os.path.basename(volume_path):
+                return True
+    return False
+
+
 def is_iso_volume(volume):
-    """
-    Check if volume is an ISO image by checking its format
-    Args:
-        volume: libvirt volume object
-    Returns:
-        bool: True if volume is an ISO, False otherwise
-    """
+    """Check if volume is an ISO image"""
     try:
         vol_xml = volume.XMLDesc(0)
         root = ET.fromstring(vol_xml)
         format_elem = root.find(".//format")
         if format_elem is not None:
             return format_elem.get('type') == 'iso'
-        # Fallback to checking file extension if format not specified
         return volume.name().lower().endswith('.iso')
     except libvirt.libvirtError:
         return False
+
 
 def get_next_target_dev(dom_xml, device_prefix):
     """Get next available target device name"""
@@ -155,8 +95,7 @@ def get_next_target_dev(dom_xml, device_prefix):
         dev = disk.get('dev', '')
         if dev.startswith(device_prefix):
             existing.add(dev)
-    
-    # Generate possible names
+
     index = 0
     while True:
         name = f"{device_prefix}{chr(ord('a') + index)}"
@@ -164,11 +103,12 @@ def get_next_target_dev(dom_xml, device_prefix):
             return name
         index += 1
 
+
 def ensure_sata_controller(domain, dom_xml, is_running):
-    """Ensure SATA controller exists, add if needed"""
+    """Ensure SATA controller exists for ISO attachments"""
     root = ET.fromstring(dom_xml)
     sata_controllers = root.findall(".//controller[@type='sata']")
-    
+
     if not sata_controllers:
         controller_xml = """
         <controller type='sata' index='0'>
@@ -182,21 +122,12 @@ def ensure_sata_controller(domain, dom_xml, is_running):
         return True
     return False
 
+
 def generate_disk_xml(volume, target_dev, device_type='disk'):
-    """
-    Generate XML for disk attachment using volume object
-    Args:
-        volume: libvirt volume object
-        target_dev: target device name
-        device_type: disk or cdrom
-    Returns:
-        tuple: (xml string, bus type)
-    """
+    """Generate XML for disk attachment"""
     pool = volume.storagePoolLookupByVolume()
-    
-    # Determine source based on pool type
     pool_type = ET.fromstring(pool.XMLDesc(0)).get('type')
-    
+
     if pool_type == 'logical':
         source_tag = f"<source dev='{volume.path()}'/>"
         disk_type = 'block'
@@ -204,9 +135,8 @@ def generate_disk_xml(volume, target_dev, device_type='disk'):
         source_tag = f"<source volume='{volume.name()}' pool='{pool.name()}'/>"
         disk_type = 'volume'
 
-    # Use SATA for CDROMs and virtio for regular disks
     bus = 'sata' if device_type == 'cdrom' else 'virtio'
-    
+
     xml = f"""
     <disk type='{disk_type}' device='{device_type}'>
       <driver name='qemu' type='raw'/>
@@ -217,6 +147,7 @@ def generate_disk_xml(volume, target_dev, device_type='disk'):
     """
     return xml.strip(), bus
 
+
 def attach_device(domain, xml, is_running):
     """Attach device to domain with appropriate flags"""
     flags = libvirt.VIR_DOMAIN_AFFECT_CONFIG
@@ -224,111 +155,83 @@ def attach_device(domain, xml, is_running):
         flags |= libvirt.VIR_DOMAIN_AFFECT_LIVE
     return domain.attachDeviceFlags(xml, flags)
 
+
 def main():
     module = AnsibleModule(
         argument_spec=dict(
             name=dict(type='str', required=True),
             volumes=dict(type='list', elements='str', required=True),
             pool=dict(type='str', required=True),
-            uri=dict(type='str', default='qemu:///system'),
-            remote_host=dict(type='str', required=False),
-            auth_user=dict(type='str', required=False),
-            auth_password=dict(type='str', required=False, no_log=True),
+            uri=dict(type='str', default='qemu:///system')
         ),
         supports_check_mode=True
     )
 
     if not HAS_LIBVIRT:
-        module.fail_json(msg='The libvirt python module is required')
+        module.fail_json(msg='libvirt-python is required for this module')
 
-    # Initialize connection handler
     libvirt_conn = LibvirtConnection(module)
-
-    # Setup connection parameters
-    libvirt_conn.setup_connection_params(
-        uri=module.params['uri'],
-        auth_user=module.params['auth_user'],
-        auth_password=module.params['auth_password'],
-        remote_host=module.params['remote_host']
-    )
+    libvirt_conn.setup_connection_params(uri=module.params['uri'])
 
     try:
-        # Establish connection
         success, conn = libvirt_conn.connect()
         if not success:
             module.fail_json(msg=f"Failed to connect to libvirt: {conn}")
 
-        # Initialize utilities
         volume_utils = VolumeUtils(conn)
         domain_utils = DomainUtils(conn)
 
-        domain_name = module.params['name']
-        pool_name = module.params['pool']
-        volume_names = module.params['volumes']
-
-        result = {
-            'changed': False,
-            'attached_volumes': [],
-            'msg': ''
-        }
-
-        # Verify domain exists
-        if not domain_utils.domain_exists(domain_name):
-            module.fail_json(msg=f"Domain {domain_name} not found")
+        if not domain_utils.domain_exists(module.params['name']):
+            module.fail_json(msg=f"Domain {module.params['name']} not found")
 
         try:
-            domain = conn.lookupByName(domain_name)
+            domain = conn.lookupByName(module.params['name'])
             is_running = domain.isActive()
-            
-            result['domain_state'] = 'running' if is_running else 'shutoff'
-            
-            # Get initial domain XML
             dom_xml = domain.XMLDesc(0)
 
-            # Look up storage pool
             try:
-                pool = conn.storagePoolLookupByName(pool_name)
+                pool = conn.storagePoolLookupByName(module.params['pool'])
             except libvirt.libvirtError:
-                module.fail_json(msg=f"Storage pool '{pool_name}' not found")
+                module.fail_json(msg=f"Storage pool '{module.params['pool']}' not found")
 
-            # Refresh pool to ensure we have current volume list
             try:
                 pool.refresh(0)
             except libvirt.libvirtError as e:
                 module.warn(f"Failed to refresh pool: {str(e)}")
 
-            # Check volumes and determine if we need SATA controller
+            result = {
+                'changed': False,
+                'attached_volumes': [],
+                'already_attached': []
+            }
+
             volumes_to_attach = []
-            for volume_name in volume_names:
+            for volume_name in module.params['volumes']:
                 try:
                     volume = pool.storageVolLookupByName(volume_name)
+                    if is_volume_attached(dom_xml, volume.path()):
+                        result['already_attached'].append(volume_name)
+                        continue
                     volumes_to_attach.append(volume)
                 except libvirt.libvirtError:
-                    module.fail_json(msg=f"Volume '{volume_name}' not found in pool '{pool_name}'")
+                    module.fail_json(msg=f"Volume '{volume_name}' not found in pool '{module.params['pool']}'")
 
-            # Check if we need SATA controller for ISOs
             has_iso = any(is_iso_volume(vol) for vol in volumes_to_attach)
-            if has_iso:
-                if not module.check_mode:
-                    changed = ensure_sata_controller(domain, dom_xml, is_running)
-                    if changed:
-                        result['changed'] = True
-                        dom_xml = domain.XMLDesc(0)  # Refresh XML
+            if has_iso and not module.check_mode:
+                changed = ensure_sata_controller(domain, dom_xml, is_running)
+                if changed:
+                    result['changed'] = True
+                    dom_xml = domain.XMLDesc(0)
 
-            # Attach volumes
             for volume in volumes_to_attach:
-                # Determine device type and prefix
                 device_type = 'cdrom' if is_iso_volume(volume) else 'disk'
                 device_prefix = 'sd' if device_type == 'cdrom' else 'vd'
-
-                # Get next available target device
                 target_dev = get_next_target_dev(dom_xml, device_prefix)
 
                 if not module.check_mode:
-                    # Generate and attach disk XML
                     disk_xml, bus = generate_disk_xml(volume, target_dev, device_type)
                     attach_device(domain, disk_xml, is_running)
-                    dom_xml = domain.XMLDesc(0)  # Refresh XML after each attachment
+                    dom_xml = domain.XMLDesc(0)
 
                 result['attached_volumes'].append({
                     'name': volume.name(),
@@ -339,20 +242,24 @@ def main():
                 })
                 result['changed'] = True
 
-            if result['changed']:
-                result['msg'] = f"Successfully attached {len(volumes_to_attach)} volume(s) to {result['domain_state']} domain"
+            if result['attached_volumes']:
+                result['msg'] = f"Successfully attached {len(result['attached_volumes'])} volume(s)"
+            elif result['already_attached']:
+                result['msg'] = f"All volumes already attached"
             else:
-                result['msg'] = "No volumes were attached"
+                result['msg'] = "No volumes to attach"
 
             module.exit_json(**result)
 
         except libvirt.libvirtError as e:
             module.fail_json(msg=f"Error attaching volumes: {str(e)}")
         except Exception as e:
-            module.fail_json(msg=f"Unexpected error: {str(e)}", exception=traceback.format_exc())
+            module.fail_json(msg=f"Unexpected error: {str(e)}",
+                             exception=traceback.format_exc())
 
     finally:
         libvirt_conn.close()
+
 
 if __name__ == '__main__':
     main()

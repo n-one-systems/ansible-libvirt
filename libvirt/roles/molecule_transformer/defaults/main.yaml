@@ -3,6 +3,10 @@
 storage_pool_base_dir: "/var/tmp/"
 URI: "qemu:///system"
 
+molecule_user: "molecule"
+molecule_user_password: "molecule"
+molecule_ssh_pub_key: "{{ '~/.ssh/id_rsa.pub' | expanduser }}"
+molecule_ssh_private_key: "{{ '~/.ssh/id_rsa' | expanduser }}"
 _oob_network:
   name: "{{ PROJECT_NAME }}-molecule-oob"
   cidr: "192.0.2.0/24"
