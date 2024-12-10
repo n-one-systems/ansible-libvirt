@@ -5,7 +5,6 @@
   ansible.builtin.include_role:
     name: nsys.libvirt.molecule_transformer
   vars:
-    project_name: "{{ lookup('ansible.builtin.password', '/dev/null', seed=project_base_dir, chars=['ascii_lowercase','digits'], length=5 ) }}"
     state: present
 
 - name: Remove libvirt domains (clones)

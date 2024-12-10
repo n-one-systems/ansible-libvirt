@@ -1,0 +1,39 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+driver:
+  name: default
+provisioner:
+  name: ansible
+  config_options:
+    libvirt_defaults:
+      oob_network:
+        cidr: "192.168.234.0/24"  # OVERWRITE THIS if you want to have multiple molecule environments
+    defaults:
+      interpreter_python: auto_silent
+verifier:
+  name: ansible
+platforms:
+
+- name: vm1
+  type: vm
+  power_state: poweroff
+  memory: 512
+  cloud_init: false
+  cpu: 1
+scenario:
+  test_sequence:
+#  - lint
+#  - destroy
+  - dependency
+  - syntax
+  - create
+  - prepare
+  - converge
+  - idempotence
+#  - side_effect
+  - verify
+#  - cleanup
+#  - destroy

@@ -1,0 +1,21 @@
+- name: Default pool
+  nsys.libvirt.storage.pool:
+    name: pool1
+    pool_type: dir
+    target_path: "{{ MOLECULE_TEST_BASE_DIR }}/pools/pool1"
+
+- name: Create Pool - inactivate/no-autostart
+  nsys.libvirt.storage.pool:
+    name: pool2
+    pool_type: dir
+    target_path: "{{ MOLECULE_TEST_BASE_DIR }}/pools/pool2"
+    state: active
+    autostart: true
+
+- name: Create Pool - activate/autostart
+  nsys.libvirt.storage.pool:
+    name: pool3
+    pool_type: dir
+    target_path: "{{ MOLECULE_TEST_BASE_DIR }}/pools/pool3"
+    state: active
+    autostart: true

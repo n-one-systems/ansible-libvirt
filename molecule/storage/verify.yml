@@ -1,0 +1,76 @@
+---
+- name: Verify storage scenario
+  hosts: localhost
+  gather_facts: false
+  vars:
+    uri: "qemu:///system"  # Default URI for local connection
+
+  tasks:
+  - name: verify that pools got created
+    block:
+    - name: Get pool info
+      ansible.builtin.set_fact:
+        pool_info: "{{ lookup('nsys.libvirt.storage.info', molecule_yml.platforms | 
+                      selectattr('type', 'equalto', 'pool') | 
+                      map(attribute='name') | first) }}"
+    - name: Assert pool exists and is active
+      ansible.builtin.assert:
+        that:
+          - pool_info.active | bool
+          - pool_info.persistent | bool
+          - pool_info.autostart | bool
+        fail_msg: "Pool is not properly configured"
+        success_msg: "Pool is properly configured"
+
+    - name: Get list of expected volumes
+      ansible.builtin.set_fact:
+        expected_volumes: "{{ molecule_yml.platforms | 
+                            selectattr('type', 'equalto', 'volume') | 
+                            list }}"
+
+    - name: Verify each volume
+      ansible.builtin.include_tasks: verify_volume.yml
+      loop: "{{ expected_volumes }}"
+      loop_control:
+        loop_var: volume_spec
+
+    - name: Check volume capacities
+      ansible.builtin.assert:
+        that:
+          - volume_info.capacity >= volume_spec.capacity | human_to_bytes
+        fail_msg: "Volume {{ volume_spec.name }} has incorrect capacity"
+        success_msg: "Volume {{ volume_spec.name }} has correct capacity"
+      vars:
+        volume_info: "{{ lookup('nsys.libvirt.storage.info', 
+                        volume_spec.pool + '/' + volume_spec.name) }}"
+      loop: "{{ expected_volumes }}"
+      loop_control:
+        loop_var: volume_spec
+  - name: verify that volumes got created
+    block:
+    - name: Get volume info
+      ansible.builtin.set_fact:
+        volume_info: "{{ lookup('nsys.libvirt.storage.info', 
+                        volume_spec.pool + '/' + volume_spec.name) }}"
+
+    - name: Verify volume exists and has correct properties
+      ansible.builtin.assert:
+        that:
+          - volume_info != {}
+          - volume_info.name == volume_spec.name
+          - volume_info.pool == volume_spec.pool
+          - volume_info.format == volume_spec.format | default('raw')
+        fail_msg: "Volume {{ volume_spec.name }} is not properly configured"
+        success_msg: "Volume {{ volume_spec.name }} is properly configured"
+
+    - name: Verify volume path exists
+      ansible.builtin.stat:
+        path: "{{ volume_info.path }}"
+      register: volume_path
+
+    - name: Assert volume file exists
+      ansible.builtin.assert:
+        that:
+          - volume_path.stat.exists
+        fail_msg: "Volume file {{ volume_info.path }} does not exist"
+        success_msg: "Volume file exists at {{ volume_info.path }}"

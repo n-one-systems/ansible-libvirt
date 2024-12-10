@@ -1,6 +1,6 @@
 # ./role/molecule_handler/tasks/networks/remove.yaml
 - name: Remove network
-  nsys.libvirt.network:
+  nsys.libvirt.network.network:
     name: "{{ network.name }}"
     state: absent
   loop: "{{ NETWORK_SPECS }}"

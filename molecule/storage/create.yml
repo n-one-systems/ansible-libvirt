@@ -1,0 +1,11 @@
+---
+# ./molecule/default/create.yml
+# nsys-ai-claude-3.5
+- name: Create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+  - role: nsys.libvirt.molecule_handler
+    vars:
+      molecule_action: create

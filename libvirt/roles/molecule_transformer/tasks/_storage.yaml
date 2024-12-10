@@ -50,7 +50,7 @@
       capacity: "{{ item.1.capacity | default(omit) }}"
       path: "{{ item.1.path | default(omit) }}"
       boot_order: "{{ item.1.boot_order | default(omit) }}"
-  loop: "{{ _vm_specs | subelements('disks') }}"
+  loop: "{{ _vm_specs | subelements('disks', {'skip_missing': true}) }}"
 
 - name: Export storage specs
   ansible.builtin.set_fact:
@@ -59,7 +59,7 @@
 
 - name: Set pool directory
   ansible.builtin.set_fact:
-    POOL_DIR: "{{ _global_specs.storage_pool_base_dir | default(storage_pool_base_dir) ~ '/' ~ POOL_NAME  }}"
+    POOL_DIR: "{{ _global_specs.storage_pool_base_dir | default(storage_pool_base_dir) + POOL_NAME  }}"
 
 - name: DEBUG-  Storage/Disk Data
   ansible.builtin.debug:

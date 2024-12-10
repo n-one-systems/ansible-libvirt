@@ -6,14 +6,14 @@
   gather_facts: false
   vars:
     CIRROS_VERSION: "0.6.3"
-    DSL_VERSION: "2024.rc7"
+    TC_VERSION: "15.x"
     ARCHITECTURE: "x86_64"
     MOLECULE_FILES_DIR: "{{ playbook_dir }}/../molecule/default/files"
     download_files:
       - url: "https://download.cirros-cloud.net/{{CIRROS_VERSION}}/cirros-{{CIRROS_VERSION}}-{{ARCHITECTURE}}-disk.img"
         dest: "cirros.img"
-      - url: "https://damnsmalllinux.org/download/dsl-{{DSL_VERSION}}.iso"
-        dest: "dsl.iso"
+      - url: "http://www.tinycorelinux.net/{{TC_VERSION}}/x86/release/Core-current.iso"
+        dest: "tinycore.iso"
 
   tasks:
     - name: Ensure molecule files directory exists

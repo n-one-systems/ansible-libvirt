@@ -1,7 +1,11 @@
 # ./role/molecule_handler/tasks/main.yaml
 - name: Generate Seed for molecule (molecule_ephemeral_directory is used as seed)
   ansible.builtin.set_fact:
-    project_base_dir: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}"
+    PROJECT_BASE_DIR: "{{ lookup('env', 'MOLECULE_EPHEMERAL_DIRECTORY') }}"
+
+- name: Generate Project Name
+  ansible.builtin.set_fact:
+    PROJECT_NAME: "{{ lookup('ansible.builtin.password', '/dev/null', seed=PROJECT_BASE_DIR, chars=['ascii_lowercase','digits'], length=5 ) }}"
 
 - name: Assert that this role is called from molecule
   ansible.builtin.assert:

@@ -1,6 +1,6 @@
 # ./role/molecule_handler/tasks/clones/create.yaml
 - name: Create a full clone of a Domain
-  nsys.libvirt.clone_domain:
+  nsys.libvirt.domain.clone_domain:
     name: "{{ clone.source_name}}"
     clone_name: "{{ clone.name }}"
     linked_clone: "{{ clone.linked_clone | default(false) }}"
