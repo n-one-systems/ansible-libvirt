@@ -6,20 +6,24 @@
     TC_VERSION: "15.x"
     ARCHITECTURE: "x86_64"
     MOLECULE_FILES_DIR: "{{ playbook_dir }}/../molecule/default/files"
+    MOLECULE_TEST_BASE_DIR: "/tmp/molecule"
     download_files:
       - url: "https://download.cirros-cloud.net/{{CIRROS_VERSION}}/cirros-{{CIRROS_VERSION}}-{{ARCHITECTURE}}-disk.img"
         dest: "cirros.img"
       - url: "http://www.tinycorelinux.net/{{TC_VERSION}}/x86/release/Core-current.iso"
         dest: "tinycore.iso"
   tasks:
-    - name: Ensure molecule files directory exists
-      file:
-        path: "{{ MOLECULE_FILES_DIR }}"
-        state: directory
-        mode: '0755'
-    - name: Download files
-      get_url:
-        url: "{{ item.url }}"
-        dest: "{{ MOLECULE_FILES_DIR }}/{{ item.dest }}"
-      with_items: "{{ download_files }}"
+  - name: Ensure molecule required directory exists
+    file:
+      path: "{{ item }}"
+      state: directory
+      mode: '0755'
+    loop:
+    - "{{ MOLECULE_FILES_DIR }}"
+    - "{{ MOLECULE_TEST_BASE_DIR }}/pools"
+  - name: Download files
+    get_url:
+      url: "{{ item.url }}"
+      dest: "{{ MOLECULE_FILES_DIR }}/{{ item.dest }}"
+    with_items: "{{ download_files }}"
 

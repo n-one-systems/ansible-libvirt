@@ -2,11 +2,12 @@
 - name: Cleanup storage directories
   hosts: localhost
   gather_facts: false
+  vars:
+    MOLECULE_TEST_BASE_DIR: "/tmp/molecule"
   tasks:
   - name: Remove storage pool directories
     ansible.builtin.file:
       path: "{{ item }}"
       state: absent
     loop:
-    - /var/tmp/pool1
-    - /var/tmp/pool2
+    - "{{ MOLECULE_TEST_BASE_DIR }}"

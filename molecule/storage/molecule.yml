@@ -23,3 +23,17 @@ platforms:
   memory: 512
   cloud_init: false
   cpu: 1
+scenario:
+  test_sequence:
+#  - lint
+#  - destroy
+  - dependency
+  - syntax
+  - create
+  - prepare
+  - converge
+  - idempotence
+#  - side_effect
+  - verify
+#  - cleanup
+#  - destroy
